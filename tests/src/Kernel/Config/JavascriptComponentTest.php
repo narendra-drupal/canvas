@@ -22,6 +22,9 @@ class JavascriptComponentTest extends CanvasKernelTestBase {
 
   /**
    * Tests adding imported component dependencies.
+   *
+   * @legacy-covers ::createFromClientSide
+   * @legacy-covers ::updateFromClientSide
    */
   public function testAddingImportedComponentDependencies(): void {
     $client_data = [
