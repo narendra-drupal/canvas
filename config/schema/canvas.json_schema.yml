@@ -36,8 +36,7 @@ canvas.json_schema.prop.*:
             - 'integer'
             - 'boolean'
             - 'object'
-            # 'array' is added by canvas_dev_mode module when enabled.
-            # @see \Drupal\canvas_dev_mode\Hook\UsePrivateApis::addArrayTypeChoice()
+            - 'array'
     description:
       requiredKey: false
       type: label
@@ -49,7 +48,7 @@ canvas.json_schema.prop.*:
       type: sequence
       label: 'Examples'
       sequence:
-        # Each of the 5 concrete config schema subtypes (one for each of the JSON Schema types allowed by the `Choice`
+        # Each of the 6 concrete config schema subtypes (one for each of the JSON Schema types allowed by the `Choice`
         # constraint above) must define this.
         type: undefined
 
@@ -254,86 +253,16 @@ canvas.json_schema.prop.array:
         sequence:
           # Dynamically resolve type based on items.type value.
           type: canvas.array_example_item.[%parent.%parent.%parent.items.type]
+
+    items:
+      type: canvas.json_schema.item.[%parent.items.type]
     maxItems:
       requiredKey: false
       type: integer
-      label: 'Maximum number of items'
+      label: 'Maximum number of array items'
       constraints:
         Range:
-          min: 1
-    items:
-      # items is required for array type - defines the schema for array elements
-      type: mapping
-      label: 'Array items schema'
-      mapping:
-        type:
-          type: string
-          label: 'Item type'
-          constraints:
-            Choice:
-              choices:
-                - 'string'
-                - 'number'
-                - 'integer'
-                - 'object'
-        enum:
-          requiredKey: false
-          type: sequence
-          sequence:
-            type: string
-            constraints:
-              NotNull: ~
-        meta:enum:
-          requiredKey: false
-          type: sequence
-          sequence:
-            type: label
-            constraints:
-              NotNull: ~
-        x-translation-context:
-          requiredKey: false
-          type: string
-          label: 'Translation context'
-        format:
-          requiredKey: false
-          type: string
-          label: 'Format'
-          constraints:
-            Choice:
-              choices:
-                - date-time
-                - date
-                - email
-                - idn-email
-                - uri
-                - uri-reference
-                - iri
-                - iri-reference
-        contentMediaType:
-          requiredKey: false
-          type: string
-          label: 'Content media type'
-          constraints:
-            Choice:
-              choices:
-                - 'text/html'
-        'x-formatting-context':
-          requiredKey: false
-          type: string
-          label: 'Formatting context'
-          constraints:
-            Choice:
-              choices:
-                - 'block'
-        '$ref':
-          requiredKey: false
-          type: string
-          constraints:
-            Choice:
-              choices:
-                - 'json-schema-definitions://canvas.module/image'
-                - 'json-schema-definitions://canvas.module/video'
-
+          min: 2
 # Dynamic type definitions for array example items based on items.type.
 # @see canvas.json_schema.prop.array
 canvas.array_example_item.string:
@@ -343,6 +272,11 @@ canvas.array_example_item.string:
 
 canvas.array_example_item.integer:
   type: integer
+  constraints:
+    NotNull: ~
+
+canvas.array_example_item.boolean:
+  type: boolean
   constraints:
     NotNull: ~
 
@@ -360,3 +294,67 @@ canvas.array_example_item.object:
     NotBlank:
       allowNull: true
 
+canvas.json_schema.item.*:
+  type: mapping
+  mapping:
+    type:
+      type: string
+      label: 'Type'
+      constraints:
+        Choice:
+          choices:
+            - 'string'
+            - 'number'
+            - 'integer'
+            - 'boolean'
+            - 'object'
+
+canvas.json_schema.item.string:
+  type: canvas.json_schema.item.*
+  constraints:
+    FullyValidatable: ~
+  mapping:
+    format:
+      requiredKey: false
+      type: string
+      label: 'Format'
+      constraints:
+        Choice:
+          choices:
+            - date-time
+            - date
+            - email
+            - idn-email
+            - uri
+            - uri-reference
+            - iri
+            - iri-reference
+
+canvas.json_schema.item.integer:
+  type: canvas.json_schema.item.*
+  constraints:
+    FullyValidatable: ~
+
+canvas.json_schema.item.number:
+  type: canvas.json_schema.item.*
+  constraints:
+    FullyValidatable: ~
+
+canvas.json_schema.item.boolean:
+  type: canvas.json_schema.item.*
+  constraints:
+    FullyValidatable: ~
+
+canvas.json_schema.item.object:
+  type: canvas.json_schema.item.*
+  constraints:
+    FullyValidatable: ~
+  mapping:
+    '$ref':
+      # Same as canvas.json_schema.prop.object, $ref is required.
+      type: string
+      constraints:
+        Choice:
+          choices:
+            - 'json-schema-definitions://canvas.module/image'
+            - 'json-schema-definitions://canvas.module/video'

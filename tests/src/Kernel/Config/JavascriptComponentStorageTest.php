@@ -108,7 +108,7 @@ final class JavascriptComponentStorageTest extends AssetLibraryStorageTest {
     // Make it pass validation by adding the missing `examples`, and save it.
     $props['title']['examples'] = ['Title'];
     $js_component->setProps($props);
-    self::assertEntityIsValid($js_component);
+    $this->assertSame([], self::violationsToArray($js_component->getTypedData()->validate()));
     $js_component->save();
 
     // No Component config entity is ever created for JavaScript Components not
@@ -135,7 +135,6 @@ final class JavascriptComponentStorageTest extends AssetLibraryStorageTest {
     $this->assertSame([
       '' => 'Prop "title" has invalid example value: [] String value found, but an array or an object is required',
       'props.title' => "'items' is a required key because props.title.type is array (see config schema type canvas.json_schema.prop.array).",
-      'props.title.type' => 'The value you selected is not a valid choice.',
     ], self::violationsToArray($js_component->getTypedData()->validate()));
 
     // In other words: if the JavaScript Component config entity is sufficiently
