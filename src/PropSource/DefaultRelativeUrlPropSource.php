@@ -161,7 +161,8 @@ final class DefaultRelativeUrlPropSource extends PropSourceBase {
       return $evaluated;
     }
     elseif ($json_schema['type'] === 'object') {
-      // Validate that value is an array (JSON objects are represented as associative arrays in PHP).
+      // Validate that value is an array (JSON objects are represented as
+      // associative arrays in PHP).
       if (!\is_array($value)) {
         throw new \InvalidArgumentException(\sprintf(
           'Schema defines type "object" but example value is %s. ' .
