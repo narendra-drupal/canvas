@@ -127,4 +127,179 @@ class DefaultRelativeUrlPropSourceTest extends PropSourceTestBase {
     $source->asChoice();
   }
 
+  /**
+   * Test array-type prop with multiple URL items.
+   *
+   * Tests:
+   * - Happy path for nested arrays
+   * - Tests URL rewriting in array items
+   * - Validates recursive processing
+   */
+  public function testArrayTypePropWithMultipleUrlItems(): void {
+    $this->enableModules(['canvas_test_sdc', 'link', 'image', 'options', 'text']);
+    $this->container->get(ComponentSourceManager::class)->generateComponents();
+
+    $path = $this->container->get(ExtensionPathResolver::class)->getPath('module', 'canvas_test_sdc') . '/components/image-optional-with-example-and-additional-prop';
+
+    // Test array of URL strings.
+    $source = new DefaultRelativeUrlPropSource(
+      value: [
+        'gracie.jpg',
+        'another-image.jpg',
+      ],
+      jsonSchema: [
+        'type' => 'array',
+        'items' => [
+          'type' => 'string',
+          'format' => 'uri-reference',
+        ],
+      ],
+      componentId: 'sdc.canvas_test_sdc.image-optional-with-example-and-additional-prop',
+    );
+
+    $evaluation_result = $source->evaluate(NULL, is_required: TRUE);
+    self::assertIsArray($evaluation_result->value);
+    self::assertCount(2, $evaluation_result->value);
+    self::assertSame(Url::fromUri(\sprintf('base:%s/gracie.jpg', $path))->toString(), $evaluation_result->value[0]);
+    self::assertSame(Url::fromUri(\sprintf('base:%s/another-image.jpg', $path))->toString(), $evaluation_result->value[1]);
+
+    // Test array of objects with URL properties.
+    $source = new DefaultRelativeUrlPropSource(
+      value: [
+        [
+          'src' => 'gracie.jpg',
+          'alt' => 'A good dog',
+        ],
+        [
+          'src' => 'another.jpg',
+          'alt' => 'Another image',
+        ],
+      ],
+      jsonSchema: [
+        'type' => 'array',
+        'items' => [
+          'type' => 'object',
+          'properties' => [
+            'src' => [
+              'type' => 'string',
+              'format' => 'uri-reference',
+            ],
+            'alt' => [
+              'type' => 'string',
+            ],
+          ],
+        ],
+      ],
+      componentId: 'sdc.canvas_test_sdc.image-optional-with-example-and-additional-prop',
+    );
+
+    $evaluation_result = $source->evaluate(NULL, is_required: TRUE);
+    self::assertIsArray($evaluation_result->value);
+    self::assertCount(2, $evaluation_result->value);
+    self::assertSame([
+      'src' => Url::fromUri(\sprintf('base:%s/gracie.jpg', $path))->toString(),
+      'alt' => 'A good dog',
+    ], $evaluation_result->value[0]);
+    self::assertSame([
+      'src' => Url::fromUri(\sprintf('base:%s/another.jpg', $path))->toString(),
+      'alt' => 'Another image',
+    ], $evaluation_result->value[1]);
+  }
+
+  /**
+   * Test array-type prop with non-array value.
+   *
+   * Tests:
+   * - Edge case: empty string instead of array
+   * - Tests defensive code: if (!is_array($value)) { $value = []; }
+   */
+  public function testArrayTypePropWithNonArrayValue(): void {
+    $this->enableModules(['canvas_test_sdc', 'link', 'image', 'options', 'text']);
+    $this->container->get(ComponentSourceManager::class)->generateComponents();
+
+    // Create a DefaultRelativeUrlPropSource with an array-type schema but provide a non-array value.
+    $source = new DefaultRelativeUrlPropSource(
+      value: 'not-an-array',
+      jsonSchema: [
+        'type' => 'array',
+        'items' => [
+          'type' => 'string',
+          'format' => 'uri-reference',
+        ],
+      ],
+      componentId: 'sdc.canvas_test_sdc.image-optional-with-example-and-additional-prop',
+    );
+
+    // Attempting to evaluate should throw an InvalidArgumentException.
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Schema defines type "array" but example value is string.');
+    $source->evaluate(NULL, is_required: TRUE);
+  }
+
+  /**
+   * Test array-type prop with non-list array.
+   *
+   * Tests:
+   * - Edge case: associative array with string keys
+   * - Tests normalization: array_values($value) re-indexing
+   * - Validates keys are converted from ['first', 'second'] to [0, 1]
+   */
+  public function testArrayTypePropWithNonListArray(): void {
+    $this->enableModules(['canvas_test_sdc', 'link', 'image', 'options', 'text']);
+    $this->container->get(ComponentSourceManager::class)->generateComponents();
+
+    // Create a DefaultRelativeUrlPropSource with an associative array (non-list).
+    $source = new DefaultRelativeUrlPropSource(
+      value: [
+        'first' => 'gracie.jpg',
+        'second' => 'another.jpg',
+      ],
+      jsonSchema: [
+        'type' => 'array',
+        'items' => [
+          'type' => 'string',
+          'format' => 'uri-reference',
+        ],
+      ],
+      componentId: 'sdc.canvas_test_sdc.image-optional-with-example-and-additional-prop',
+    );
+
+    // Attempting to evaluate should throw an InvalidArgumentException for non-list array.
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Array-type props must use sequential numeric keys [0, 1, 2, ...] to form a proper list. Got associative array with keys: [first, second].');
+    $source->evaluate(NULL, is_required: TRUE);
+  }
+
+  /**
+   * Test object-type prop with non-array value.
+   *
+   * Tests:
+   * - Edge case: string instead of object/array
+   * - Tests defensive code for objects
+   */
+  public function testObjectTypePropWithNonArrayValue(): void {
+    $this->enableModules(['canvas_test_sdc', 'link', 'image', 'options', 'text']);
+    $this->container->get(ComponentSourceManager::class)->generateComponents();
+
+    // Create a DefaultRelativeUrlPropSource with an object-type schema but provide a non-array value.
+    $source = new DefaultRelativeUrlPropSource(
+      value: 'not-an-object',
+      jsonSchema: [
+        'type' => 'object',
+        'properties' => [
+          'src' => [
+            'type' => 'string',
+            'format' => 'uri-reference',
+          ],
+        ],
+      ],
+      componentId: 'sdc.canvas_test_sdc.image-optional-with-example-and-additional-prop',
+    );
+
+    // Attempting to evaluate should throw an InvalidArgumentException.
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Schema defines type "object" but example value is string.');
+    $source->evaluate(NULL, is_required: TRUE);
+  }
+
 }

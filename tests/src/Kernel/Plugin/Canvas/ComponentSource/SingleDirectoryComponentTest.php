@@ -221,6 +221,7 @@ final class SingleDirectoryComponentTest extends GeneratedFieldExplicitInputUxCo
       'sdc.canvas_test_sdc.card-with-stream-wrapper-image',
       'sdc.canvas_test_sdc.columns',
       'sdc.canvas_test_sdc.component-mismatch-meta-enum',
+      'sdc.canvas_test_sdc.component-mismatch-meta-enum-array-items',
       'sdc.canvas_test_sdc.component-no-meta-enum',
       'sdc.canvas_test_sdc.crash',
       'sdc.canvas_test_sdc.date',
@@ -744,6 +745,17 @@ HTML,
           'library' => [
             'core/components.canvas_test_sdc--component-mismatch-meta-enum',
             'core/components.canvas_test_sdc--component-mismatch-meta-enum',
+          ],
+        ],
+      ],
+      'sdc.canvas_test_sdc.component-mismatch-meta-enum-array-items' => [
+        'cacheability' => $default_cacheability,
+        'html' => 'red,blue
+',
+        'attachments' => [
+          'library' => [
+            'core/components.canvas_test_sdc--component-mismatch-meta-enum-array-items',
+            'core/components.canvas_test_sdc--component-mismatch-meta-enum-array-items',
           ],
         ],
       ],
@@ -1861,6 +1873,25 @@ HTML
           ],
         ],
       ],
+      'sdc.canvas_test_sdc.component-mismatch-meta-enum-array-items' => [
+        'prop_field_definitions' => [
+          'colors' => [
+            'required' => FALSE,
+            'field_type' => 'list_string',
+            'field_storage_settings' => [
+              'allowed_values_function' => 'canvas_load_allowed_values_for_component_prop',
+            ],
+            'field_instance_settings' => [],
+            'field_widget' => 'options_select',
+            'default_value' => [
+              0 => ['value' => 'red'],
+              1 => ['value' => 'blue'],
+            ],
+            'expression' => 'ℹ︎list_string␟value',
+            'cardinality' => -1,
+          ],
+        ],
+      ],
       'sdc.canvas_test_sdc.component-no-meta-enum' => [
         'prop_field_definitions' => [
           'style' => [
@@ -2684,6 +2715,13 @@ HTML
         ],
       ],
       'sdc.canvas_test_sdc.component-mismatch-meta-enum' => [
+        'module' => [
+          'core',
+          'options',
+          'canvas_test_sdc',
+        ],
+      ],
+      'sdc.canvas_test_sdc.component-mismatch-meta-enum-array-items' => [
         'module' => [
           'core',
           'options',
@@ -3708,6 +3746,46 @@ HTML
                 0 => ['value' => '3.14'],
               ],
               'resolved' => '3.14',
+            ],
+          ],
+        ],
+        'transforms' => [],
+      ],
+      'sdc.canvas_test_sdc.component-mismatch-meta-enum-array-items' => [
+        'expected_output_selectors' => [
+          ':contains("red")',
+          ':contains("blue")',
+        ],
+        'source' => 'Module component',
+        'metadata' => ['slots' => []],
+        'propSources' => [
+          'colors' => [
+            'required' => FALSE,
+            'jsonSchema' => [
+              'type' => 'array',
+              'items' => [
+                'type' => 'string',
+                'enum' => [
+                  'red',
+                  'blue',
+                  'green_light',
+                  'yellow',
+                ],
+              ],
+            ],
+            'sourceType' => 'static:field_item:list_string',
+            'expression' => 'ℹ︎list_string␟value',
+            'sourceTypeSettings' => [
+              'storage' => [
+                'allowed_values_function' => 'canvas_load_allowed_values_for_component_prop',
+              ],
+            ],
+            'default_values' => [
+              'source' => [
+                0 => ['value' => 'red'],
+                1 => ['value' => 'blue'],
+              ],
+              'resolved' => ['red', 'blue'],
             ],
           ],
         ],

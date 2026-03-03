@@ -42,13 +42,18 @@ export default function FormPropTypeArray({
   const exampleArray = Array.isArray(example) ? example : [];
 
   // Ensure we always have at least one item to display in unlimited mode
+  const defaultValue = itemType === 'integer' || itemType === 'number' ? 0 : '';
   const displayArray =
-    exampleArray.length === 0 ? ([''] as (string | number)[]) : exampleArray;
+    exampleArray.length === 0
+      ? ([defaultValue] as (string | number)[])
+      : exampleArray;
 
   const handleDragEnd = createArrayDragEndHandler(displayArray, dispatch, id);
 
   const handleAdd = () => {
-    handleArrayAdd(displayArray, dispatch, id, '');
+    const defaultValue =
+      itemType === 'integer' || itemType === 'number' ? 0 : '';
+    handleArrayAdd(displayArray, dispatch, id, defaultValue);
   };
 
   const handleRemove = (index: number) => {
@@ -94,7 +99,6 @@ export default function FormPropTypeArray({
             number: 'Enter a number',
           }[itemType]
         }
-        disabled={isDisabled}
       />
     </Box>
   );
