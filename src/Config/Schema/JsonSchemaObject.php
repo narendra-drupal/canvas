@@ -13,7 +13,9 @@ use Drupal\Core\TypedData\MapDataDefinition;
 use Drupal\Core\TypedData\TypedDataInterface;
 
 /**
- * Defines a schema data type based on a JSON schema object $ref.
+ * Generates config schema definition for `type: object, $ref: …` prop example.
+ *
+ * @internal
  */
 final class JsonSchemaObject extends Mapping {
 

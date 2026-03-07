@@ -63,13 +63,6 @@ final class ComponentMetadataRequirementsChecker {
         continue;
       }
 
-      // For array types, also check enum in items.
-      $type = \is_array($prop['type'] ?? '') ? $prop['type'][0] : ($prop['type'] ?? '');
-      if ($type === 'array' && isset($prop['items']['enum']) && in_array('', $prop['items']['enum'], TRUE)) {
-        $messages[] = \sprintf('Prop "%s" has an empty enum value in items.', $prop_name);
-        continue;
-      }
-
       // Required props must have examples.
       if (in_array($prop_name, $required_props, TRUE) && !isset($prop['examples'][0])) {
         $messages[] = \sprintf('Prop "%s" is required, but does not have example value', $prop_name);
@@ -80,11 +73,17 @@ final class ComponentMetadataRequirementsChecker {
       // the prop.
       if (isset($prop['examples'][0])) {
         $example = $prop['examples'][0];
-        // Convert associative arrays to objects for validation, but keep
-        // sequential arrays (lists) as arrays since they represent
-        // array-type props.
-        if (\is_array($example) && !array_is_list($example)) {
+        // PHP's "associative arrays" are JSON's "objects". The JSON Schema
+        // validator expects such "objects" to be \stdClass objects.
+        if ($prop['type'] === ['object'] && \is_array($example)) {
           $example = (object) $example;
+        }
+        // Similarly, for `type: array, items: {type: object}`.
+        if ($prop['type'][0] === 'array' && $prop['items']['type'] === 'object' && \is_array($example)) {
+          $example = \array_map(
+            fn (array|object $item) => (object) $item,
+            $example,
+          );
         }
         $validator->reset();
         $validator->validate($example, $prop);
@@ -119,8 +118,6 @@ final class ComponentMetadataRequirementsChecker {
       if (!isset($prop['title'])) {
         $messages[] = \sprintf('Prop "%s" must have title', $prop_name);
       }
-
-      // Validate enum and meta:enum for non-array types.
       if (isset($prop['enum'], $prop['meta:enum']) && !empty($forbidden_key_characters)) {
         foreach ($prop['meta:enum'] as $meta_key => $meta_value) {
           $meta_key_with_replacements = str_replace(
@@ -142,30 +139,6 @@ final class ComponentMetadataRequirementsChecker {
         $enum_keys_diff = \array_diff($meta_enum_valid_keys, \array_keys($prop['meta:enum']));
         if (!empty($enum_keys_diff)) {
           $messages[] = \sprintf('The values for the "%s" prop enum must be defined in "meta:enum". Missing keys: "%s"', $prop_name, \implode(', ', $enum_keys_diff));
-        }
-      }
-
-      // Validate enum and meta:enum for array item types.
-      if ($type === 'array' && isset($prop['items']['enum'], $prop['items']['meta:enum']) && !empty($forbidden_key_characters)) {
-        foreach ($prop['items']['meta:enum'] as $meta_key => $meta_value) {
-          $meta_key_with_replacements = str_replace(
-            \array_keys($forbidden_key_characters),
-            array_values($forbidden_key_characters),
-            (string) $meta_key,
-          );
-          if ((string) $meta_key !== $meta_key_with_replacements) {
-            $messages[] = \sprintf('The "meta:enum" keys for the "%s" prop items enum cannot contain a dot. Offending key: "%s"', $prop_name, $meta_key);
-          }
-        }
-
-        $meta_enum_valid_keys = \array_map(fn($key) => str_replace(
-          \array_keys($forbidden_key_characters),
-          array_values($forbidden_key_characters),
-          (string) $key,
-        ), $prop['items']['enum']);
-        $enum_keys_diff = \array_diff($meta_enum_valid_keys, \array_keys($prop['items']['meta:enum']));
-        if (!empty($enum_keys_diff)) {
-          $messages[] = \sprintf('The values for the "%s" prop items enum must be defined in "meta:enum". Missing keys: "%s"', $prop_name, \implode(', ', $enum_keys_diff));
         }
       }
     }

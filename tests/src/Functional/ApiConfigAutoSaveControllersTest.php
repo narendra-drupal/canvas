@@ -13,7 +13,6 @@ use Drupal\canvas\Entity\AssetLibrary;
 use Drupal\canvas\Entity\JavaScriptComponent;
 use Drupal\canvas\Entity\Page;
 use Drupal\canvas\Entity\CanvasAssetInterface;
-use Drupal\Tests\canvas\Traits\AutoSaveManagerTestTrait;
 use Drupal\Tests\canvas\Traits\ContribStrictConfigSchemaTestTrait;
 use Drupal\user\UserInterface;
 use GuzzleHttp\RequestOptions;
@@ -29,7 +28,6 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 final class ApiConfigAutoSaveControllersTest extends HttpApiTestBase {
 
   use ContribStrictConfigSchemaTestTrait;
-  use AutoSaveManagerTestTrait;
 
   /**
    * {@inheritdoc}
@@ -75,23 +73,23 @@ final class ApiConfigAutoSaveControllersTest extends HttpApiTestBase {
           ],
           'props' => [
             'string' => [
-              'title' => 'Title',
               'type' => 'string',
+              'title' => 'Title',
               'examples' => ['Press', 'Submit now'],
             ],
             'boolean' => [
-              'title' => 'Truth',
               'type' => 'boolean',
+              'title' => 'Truth',
               'examples' => [TRUE, FALSE],
             ],
             'integer' => [
-              'title' => 'Integer',
               'type' => 'integer',
+              'title' => 'Integer',
               'examples' => [23, 10, 2024],
             ],
             'number' => [
-              'title' => 'Number',
               'type' => 'number',
+              'title' => 'Number',
               'examples' => [3.14],
             ],
           ],
@@ -113,23 +111,23 @@ final class ApiConfigAutoSaveControllersTest extends HttpApiTestBase {
           'status' => FALSE,
           'props' => [
             'string' => [
-              'title' => 'Title',
               'type' => 'string',
+              'title' => 'Title',
               'examples' => ['Press', 'Submit now'],
             ],
             'boolean' => [
-              'title' => 'Truth',
               'type' => 'boolean',
+              'title' => 'Truth',
               'examples' => [TRUE, FALSE],
             ],
             'integer' => [
-              'title' => 'Integer',
               'type' => 'integer',
+              'title' => 'Integer',
               'examples' => [23, 10, 2024],
             ],
             'number' => [
-              'title' => 'Number',
               'type' => 'number',
+              'title' => 'Number',
               'examples' => [3.14],
             ],
           ],
@@ -161,6 +159,7 @@ final class ApiConfigAutoSaveControllersTest extends HttpApiTestBase {
             'original' => 'console.log("Test")',
             'compiled' => 'console.log("Test")',
           ],
+          'fonts' => NULL,
         ],
         [
           'css' => [
@@ -179,6 +178,7 @@ final class ApiConfigAutoSaveControllersTest extends HttpApiTestBase {
             'original' => 'console.log("Test")',
             'compiled' => 'console.log("Test")',
           ],
+          'fonts' => NULL,
         ],
         ['js', 'compiled'],
         ['css', 'compiled'],
