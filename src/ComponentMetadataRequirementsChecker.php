@@ -64,8 +64,7 @@ final class ComponentMetadataRequirementsChecker {
       }
 
       // For array types, also check enum in items.
-      $type = \is_array($prop['type'] ?? '') ? $prop['type'][0] : ($prop['type'] ?? '');
-      if ($type === 'array' && isset($prop['items']['enum']) && in_array('', $prop['items']['enum'], TRUE)) {
+      if (\in_array('array', $prop['type'], TRUE) && isset($prop['items']['enum']) && in_array('', $prop['items']['enum'], TRUE)) {
         $messages[] = \sprintf('Prop "%s" has an empty enum value in items.', $prop_name);
         continue;
       }
@@ -152,7 +151,7 @@ final class ComponentMetadataRequirementsChecker {
       }
 
       // Validate enum and meta:enum for array item types.
-      if ($type === 'array' && isset($prop['items']['enum'], $prop['items']['meta:enum']) && !empty($forbidden_key_characters)) {
+      if (\in_array('array', $prop['type'], TRUE) && isset($prop['items']['enum'], $prop['items']['meta:enum']) && !empty($forbidden_key_characters)) {
         foreach ($prop['items']['meta:enum'] as $meta_key => $meta_value) {
           $meta_key_with_replacements = str_replace(
             \array_keys($forbidden_key_characters),
