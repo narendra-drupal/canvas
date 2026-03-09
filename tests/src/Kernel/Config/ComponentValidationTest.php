@@ -731,8 +731,8 @@ class ComponentValidationTest extends BetterConfigEntityValidationTestBase {
     try {
       $this->assertValidationErrors([
         '' => [
-          'The "meta:enum" keys for the "colors" prop items enum cannot contain a dot. Offending key: "green.light"',
-          'The values for the "colors" prop items enum must be defined in "meta:enum". Missing keys: "green_light"',
+          'The "meta:enum" keys for the "colors" prop enum cannot contain a dot. Offending key: "green.light"',
+          'The values for the "colors" prop enum must be defined in "meta:enum". Missing keys: "green_light"',
         ],
       ]);
     }

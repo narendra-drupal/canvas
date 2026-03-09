@@ -125,9 +125,11 @@ final class ComponentMetadataRequirementsChecker {
         $messages[] = \sprintf('Prop "%s" must have title', $prop_name);
       }
 
-      // Validate enum and meta:enum for non-array types.
-      if (isset($prop['enum'], $prop['meta:enum']) && !empty($forbidden_key_characters)) {
-        foreach ($prop['meta:enum'] as $meta_key => $meta_value) {
+      $enum_container = \in_array('array', $prop['type'], TRUE) ?
+        $prop['items'] :
+        $prop;
+      if (isset($enum_container['enum'], $enum_container['meta:enum']) && !empty($forbidden_key_characters)) {
+        foreach ($enum_container['meta:enum'] as $meta_key => $meta_value) {
           $meta_key_with_replacements = str_replace(
             \array_keys($forbidden_key_characters),
             array_values($forbidden_key_characters),
@@ -143,34 +145,10 @@ final class ComponentMetadataRequirementsChecker {
           \array_keys($forbidden_key_characters),
           array_values($forbidden_key_characters),
           (string) $key,
-        ), $prop['enum']);
-        $enum_keys_diff = \array_diff($meta_enum_valid_keys, \array_keys($prop['meta:enum']));
+        ), $enum_container['enum']);
+        $enum_keys_diff = \array_diff($meta_enum_valid_keys, \array_keys($enum_container['meta:enum']));
         if (!empty($enum_keys_diff)) {
           $messages[] = \sprintf('The values for the "%s" prop enum must be defined in "meta:enum". Missing keys: "%s"', $prop_name, \implode(', ', $enum_keys_diff));
-        }
-      }
-
-      // Validate enum and meta:enum for array item types.
-      if (\in_array('array', $prop['type'], TRUE) && isset($prop['items']['enum'], $prop['items']['meta:enum']) && !empty($forbidden_key_characters)) {
-        foreach ($prop['items']['meta:enum'] as $meta_key => $meta_value) {
-          $meta_key_with_replacements = str_replace(
-            \array_keys($forbidden_key_characters),
-            array_values($forbidden_key_characters),
-            (string) $meta_key,
-          );
-          if ((string) $meta_key !== $meta_key_with_replacements) {
-            $messages[] = \sprintf('The "meta:enum" keys for the "%s" prop items enum cannot contain a dot. Offending key: "%s"', $prop_name, $meta_key);
-          }
-        }
-
-        $meta_enum_valid_keys = \array_map(fn($key) => str_replace(
-          \array_keys($forbidden_key_characters),
-          array_values($forbidden_key_characters),
-          (string) $key,
-        ), $prop['items']['enum']);
-        $enum_keys_diff = \array_diff($meta_enum_valid_keys, \array_keys($prop['items']['meta:enum']));
-        if (!empty($enum_keys_diff)) {
-          $messages[] = \sprintf('The values for the "%s" prop items enum must be defined in "meta:enum". Missing keys: "%s"', $prop_name, \implode(', ', $enum_keys_diff));
         }
       }
     }
