@@ -222,10 +222,13 @@ final class JsComponent extends GeneratedFieldExplicitInputUxComponentSourceBase
     // Match SDC's developer-only validation of props.
     // @see \Drupal\Core\Template\ComponentsTwigExtension::validateProps()
     \assert($this->componentValidator->validateProps($props, $this->getComponentPlugin()));
-    CacheableMetadata::createFromRenderArray($build)
+    $cacheability = CacheableMetadata::createFromRenderArray($build)
       ->addCacheableDependency($component)
-      ->addCacheableDependency($props_cacheability)
-      ->applyTo($build);
+      ->addCacheableDependency($props_cacheability);
+    if ($isPreview) {
+      $cacheability->addCacheableDependency($published_required_props_cacheability);
+    }
+    $cacheability->applyTo($build);
 
     return $build + [
       '#type' => 'astro_island',
