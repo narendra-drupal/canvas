@@ -338,21 +338,21 @@ class ComponentValidationTest extends BetterConfigEntityValidationTestBase {
         VersionedConfigEntityBase::ACTIVE_VERSION => [
           'settings' => [
             'default_settings' => [
-                // For `type: block_settings`.
-                'id' => 'system_branding_block',
-                'provider' => 'system',
-                'label' => 'Site branding',
-                // For `type: block.settings.system_branding_block`, which extends
-                // the above.
-                // @see \Drupal\system\Plugin\Block\SystemBrandingBlock::defaultConfiguration()
-                'use_site_logo' => TRUE,
-                'use_site_name' => FALSE,
-                // But intentionally omitted `use_site_slogan`, which SHOULD
-                // trigger a validation error.
-                // 'use_site_slogan' => FALSE,.
-                // @todo Upstream core bug in `type: block_settings`: `label_display` should be a boolean but has `type: label` — change to FALSE once https://www.drupal.org/i/2544708 is fixed
-                'label_display' => '0',
-              ] + $defaults,
+              // For `type: block_settings`.
+              'id' => 'system_branding_block',
+              'provider' => 'system',
+              'label' => 'Site branding',
+              // For `type: block.settings.system_branding_block`, which extends
+              // the above.
+              // @see \Drupal\system\Plugin\Block\SystemBrandingBlock::defaultConfiguration()
+              'use_site_logo' => TRUE,
+              'use_site_name' => FALSE,
+              // But intentionally omitted `use_site_slogan`, which SHOULD
+              // trigger a validation error.
+              // 'use_site_slogan' => FALSE,.
+              // @todo Upstream core bug in `type: block_settings`: `label_display` should be a boolean but has `type: label` — change to FALSE once https://www.drupal.org/i/2544708 is fixed
+              'label_display' => '0',
+            ] + $defaults,
           ],
         ],
       ],
@@ -443,8 +443,8 @@ class ComponentValidationTest extends BetterConfigEntityValidationTestBase {
       $this->entity->set($property_name, $valid_values[$property_name] ?? $this->randomMachineName());
       try {
         $this->assertValidationErrors([
-            '' => "The '$property_name' property cannot be changed.",
-          ] + ($additional_validation_errors[$property_name] ?? []));
+          '' => "The '$property_name' property cannot be changed.",
+        ] + ($additional_validation_errors[$property_name] ?? []));
       }
       catch (SchemaIncompleteException) {
         // Safe to ignore, because the validation error for the immutable
@@ -600,8 +600,8 @@ class ComponentValidationTest extends BetterConfigEntityValidationTestBase {
       // @see core/assets/schemas/v1/metadata-full.schema.json
       if (\preg_match('/^[a-zA-Z0-9_-]+$/', $slot_name) !== 1) {
         $expected_violations = [
-            '' => \sprintf("In component canvas:invalid_slot:\n[slots] The property %s is not defined and the definition does not allow additional properties", $slot_name),
-          ] + $expected_violations;
+          '' => \sprintf("In component canvas:invalid_slot:\n[slots] The property %s is not defined and the definition does not allow additional properties", $slot_name),
+        ] + $expected_violations;
       }
       // Strip out the prefix added by https://www.drupal.org/node/3549909. This
       // can be removed when 11.3 is the minimum supported version of core.
@@ -803,9 +803,9 @@ class ComponentValidationTest extends BetterConfigEntityValidationTestBase {
       ->setSettings($settings);
 
     $this->assertValidationErrors([
-        // Because ::preSave() did not get executed. Irrelevant for this test.
-        'versioned_properties.active' => "'fallback_metadata' is a required key because versioned_properties.%key is active (see config schema type canvas.component.versioned.active.*).",
-      ] + $expected_validation_errors);
+      // Because ::preSave() did not get executed. Irrelevant for this test.
+      'versioned_properties.active' => "'fallback_metadata' is a required key because versioned_properties.%key is active (see config schema type canvas.component.versioned.active.*).",
+    ] + $expected_validation_errors);
   }
 
 }

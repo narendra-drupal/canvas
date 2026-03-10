@@ -634,26 +634,33 @@ final class JavaScriptComponent extends ConfigEntityBase implements CanvasAssetI
         ? $prop_schema['type'][0]
         : ($prop_schema['type'] ?? '');
 
-      // For array types with items, move enum/meta:enum to items level.
+      // For array types with items, move enum/meta:enum/x-translation-context
+      // from the array level into items, then rebuild the prop in canonical
+      // key order: title, type, examples, items, …rest.
       if ($type === 'array' && isset($prop_schema['items'])) {
-        // Move enum from array level to items level if present.
-        if (isset($prop_schema['enum'])) {
-          $prop_schema['items']['enum'] = $prop_schema['enum'];
-          unset($prop_schema['enum']);
+        $keys_to_move = ['enum', 'meta:enum', 'x-translation-context'];
+        foreach ($keys_to_move as $key) {
+          if (\array_key_exists($key, $prop_schema)) {
+            $prop_schema['items'][$key] = $prop_schema[$key];
+            unset($prop_schema[$key]);
+          }
         }
 
-        // Move meta:enum from array level to items level if present.
-        if (isset($prop_schema['meta:enum'])) {
-          $prop_schema['items']['meta:enum'] = $prop_schema['meta:enum'];
-          unset($prop_schema['meta:enum']);
+        // Rebuild in canonical order so assertSame() key-order checks pass.
+        $canonical_order = ['title', 'type', 'examples', 'items'];
+        $reordered = [];
+        foreach ($canonical_order as $key) {
+          if (\array_key_exists($key, $prop_schema)) {
+            $reordered[$key] = $prop_schema[$key];
+          }
         }
-
-        // Move x-translation-context from array level to items level.
-        if (isset($prop_schema['x-translation-context'])) {
-          $prop_schema['items']['x-translation-context'] =
-            $prop_schema['x-translation-context'];
-          unset($prop_schema['x-translation-context']);
+        // Append any remaining keys that are not in the canonical list.
+        foreach ($prop_schema as $key => $value) {
+          if (!\array_key_exists($key, $reordered)) {
+            $reordered[$key] = $value;
+          }
         }
+        $prop_schema = $reordered;
       }
     }
 
