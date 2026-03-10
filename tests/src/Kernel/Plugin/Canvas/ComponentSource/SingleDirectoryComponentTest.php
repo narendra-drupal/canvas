@@ -112,8 +112,8 @@ final class SingleDirectoryComponentTest extends GeneratedFieldExplicitInputUxCo
   }
 
   /**
-   * Tests get client side info.
-   */
+ * Tests get client side info.
+ */
   #[Depends('testDiscovery')]
   public function testGetClientSideInfo(array $component_ids): void {
     $this->installEntitySchema('node');
@@ -292,7 +292,7 @@ final class SingleDirectoryComponentTest extends GeneratedFieldExplicitInputUxCo
   #[Depends('testDiscovery')]
   public function testGetReferencedPluginClass(array $component_ids): void {
     self::assertSame(
-    // All SDCs use the same plugin class!
+      // All SDCs use the same plugin class!
       array_fill_keys($component_ids, SdcPlugin::class),
       $this->getReferencedPluginClasses($component_ids)
     );

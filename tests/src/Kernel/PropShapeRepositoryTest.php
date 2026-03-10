@@ -771,8 +771,8 @@ class PropShapeRepositoryTest extends CanvasKernelTestBase {
   }
 
   /**
-   * Tests storable prop shapes.
-   */
+ * Tests storable prop shapes.
+ */
   #[Depends('testUniquePropShapeDiscovery')]
   public function testStorablePropShapes(array $unique_prop_shapes): array {
     $this->assertNotEmpty($unique_prop_shapes);
