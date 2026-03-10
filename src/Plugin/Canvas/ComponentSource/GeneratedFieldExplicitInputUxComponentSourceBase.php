@@ -1108,8 +1108,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
           \array_key_exists('examples', $sdc_metadata->schema['properties'][$sdc_prop_name]) && \array_key_exists(0, $sdc_metadata->schema['properties'][$sdc_prop_name]['examples'])
             ? $sdc_metadata->schema['properties'][$sdc_prop_name]['examples'][0]
             : NULL
-        ),
-      allow_empty: TRUE
+        )
     )->fieldItemList;
 
     return !$example_assigned_to_field_item_list->isEmpty()
