@@ -219,6 +219,13 @@ final class JsComponent extends GeneratedFieldExplicitInputUxComponentSourceBase
 
     [$props, $props_cacheability] = self::getResolvedPropsAndCacheability(\array_intersect_key($inputs[self::EXPLICIT_INPUT_NAME] ?? [], $valid_props));
 
+    // Explicit inputs for required props for both the auto-saved version and
+    // the live versions, including cacheability.
+    if ($isPreview) {
+      $props += $published_required_props;
+      $props_cacheability->merge($published_required_props_cacheability);
+    }
+
     // Match SDC's developer-only validation of props.
     // @see \Drupal\Core\Template\ComponentsTwigExtension::validateProps()
     // When previewing with an auto-saved component (e.g. after a required prop
