@@ -221,7 +221,15 @@ final class JsComponent extends GeneratedFieldExplicitInputUxComponentSourceBase
 
     // Match SDC's developer-only validation of props.
     // @see \Drupal\Core\Template\ComponentsTwigExtension::validateProps()
-    \assert($this->componentValidator->validateProps($props, $this->getComponentPlugin()));
+    // When previewing with an auto-saved component (e.g. after a required prop
+    // was removed), build a fresh plugin from the current $component rather
+    // than using the cached plugin (which reflects the published version and
+    // may still mark the removed prop as required, causing an
+    // InvalidComponentException).
+    $component_plugin_for_validation = ($isPreview && !$autoSave->isEmpty())
+      ? JsComponentDiscovery::buildEphemeralSdcPluginInstance($component)
+      : $this->getComponentPlugin();
+    \assert($this->componentValidator->validateProps($props, $component_plugin_for_validation));
     $cacheability = CacheableMetadata::createFromRenderArray($build)
       ->addCacheableDependency($component)
       ->addCacheableDependency($props_cacheability);
