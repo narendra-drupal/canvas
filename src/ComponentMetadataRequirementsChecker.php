@@ -64,9 +64,8 @@ final class ComponentMetadataRequirementsChecker {
       }
 
       // For array types, also check enum in items.
-      if (\in_array('array', $prop['type'], TRUE) && isset($prop['items']['enum']) && in_array('', $prop['items']['enum'], TRUE)) {
+      if (\in_array('array', $prop['type'], TRUE) && isset($prop['items']['enum']) && \in_array('', $prop['items']['enum'], TRUE)) {
         $messages[] = \sprintf('Prop "%s" has an empty enum value in items.', $prop_name);
-        continue;
       }
 
       // Required props must have examples.
