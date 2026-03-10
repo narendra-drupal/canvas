@@ -126,7 +126,7 @@ final class ComponentMetadataRequirementsChecker {
       }
 
       $enum_container = \in_array('array', $prop['type'], TRUE) ?
-        $prop['items'] :
+        $prop['items'] ?? [] :
         $prop;
       if (isset($enum_container['enum'], $enum_container['meta:enum']) && !empty($forbidden_key_characters)) {
         foreach ($enum_container['meta:enum'] as $meta_key => $meta_value) {
