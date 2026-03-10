@@ -307,6 +307,11 @@ final class JavaScriptComponent extends ConfigEntityBase implements CanvasAssetI
    * @see docs/adr/0005-Keep-the-front-end-simple.md
    */
   public function updateFromClientSide(array $data): void {
+    // Normalize props: move enum/meta:enum from array level to items level.
+    if (!empty($data['props'])) {
+      \assert(\is_array($data['props']));
+      $data['props'] = $this->normalizePropsSchema($data['props']);
+    }
     foreach (array_intersect_key($data, array_flip([
       'machineName',
       'name',
@@ -316,10 +321,6 @@ final class JavaScriptComponent extends ConfigEntityBase implements CanvasAssetI
       'slots',
       'dataDependencies',
     ])) as $key => $value) {
-      // Normalize props: move enum/meta:enum from array level to items level.
-      if ($key === 'props' && \is_array($value)) {
-        $value = $this->normalizePropsSchema($value);
-      }
       $this->set($key, $value);
     }
 
