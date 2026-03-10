@@ -112,8 +112,8 @@ final class SingleDirectoryComponentTest extends GeneratedFieldExplicitInputUxCo
   }
 
   /**
- * Tests get client side info.
- */
+   * Tests get client side info.
+   */
   #[Depends('testDiscovery')]
   public function testGetClientSideInfo(array $component_ids): void {
     $this->installEntitySchema('node');
@@ -292,7 +292,7 @@ final class SingleDirectoryComponentTest extends GeneratedFieldExplicitInputUxCo
   #[Depends('testDiscovery')]
   public function testGetReferencedPluginClass(array $component_ids): void {
     self::assertSame(
-      // All SDCs use the same plugin class!
+    // All SDCs use the same plugin class!
       array_fill_keys($component_ids, SdcPlugin::class),
       $this->getReferencedPluginClasses($component_ids)
     );
@@ -745,7 +745,10 @@ HTML,
       ],
       'sdc.canvas_test_sdc.component-mismatch-meta-enum-array-items' => [
         'cacheability' => $default_cacheability,
-        'html' => 'red,blue
+        'html' => '<div>
+  Colors: red, blue
+</div>
+
 ',
         'attachments' => [
           'library' => [
@@ -1873,6 +1876,7 @@ HTML
           'colors' => [
             'required' => FALSE,
             'field_type' => 'list_string',
+            'cardinality' => -1,
             'field_storage_settings' => [
               'allowed_values_function' => 'canvas_load_allowed_values_for_component_prop',
             ],
@@ -1883,7 +1887,6 @@ HTML
               1 => ['value' => 'blue'],
             ],
             'expression' => 'ℹ︎list_string␟value',
-            'cardinality' => -1,
           ],
         ],
       ],
@@ -3766,6 +3769,12 @@ HTML
                   'green_light',
                   'yellow',
                 ],
+                'meta:enum' => [
+                  'red' => 'Red',
+                  'blue' => 'Blue',
+                  'green.light' => 'Light Green',
+                  'yellow' => 'Yellow',
+                ],
               ],
             ],
             'sourceType' => 'static:field_item:list_string',
@@ -3774,6 +3783,7 @@ HTML
               'storage' => [
                 'allowed_values_function' => 'canvas_load_allowed_values_for_component_prop',
               ],
+              'cardinality' => -1,
             ],
             'default_values' => [
               'source' => [
