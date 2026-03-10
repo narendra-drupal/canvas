@@ -156,17 +156,19 @@ class JavascriptComponentTest extends CanvasKernelTestBase {
     $this->assertSame(SAVED_NEW, $js_component->save());
 
     // Verify enum/meta:enum/x-translation-context were moved to items level.
+    // Key order follows config schema merge order: prop_shape.array keys
+    // (type, items) come first, then prop.* keys (title, examples).
     $this->assertSame([
       'tags' => [
-        'title' => 'Tags',
         'type' => 'array',
-        'examples' => [['option1']],
         'items' => [
           'type' => 'string',
           'enum' => ['option1', 'option2'],
           'meta:enum' => ['option1' => 'Option 1', 'option2' => 'Option 2'],
           'x-translation-context' => 'Tag selection',
         ],
+        'title' => 'Tags',
+        'examples' => [['option1']],
       ],
     ], $js_component->get('props'));
   }
