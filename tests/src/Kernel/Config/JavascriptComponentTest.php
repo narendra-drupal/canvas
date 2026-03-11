@@ -120,6 +120,8 @@ class JavascriptComponentTest extends CanvasKernelTestBase {
 
   /**
    * Tests that array prop enum/meta:enum are normalized from array to items level.
+   *
+   * @see \Drupal\canvas\Entity\JavaScriptComponent::normalizePropsSchema()
    */
   public function testArrayPropEnumNormalization(): void {
     // Enable canvas_dev_mode to unlock array type support.
