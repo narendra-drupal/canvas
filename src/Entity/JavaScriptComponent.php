@@ -630,6 +630,15 @@ final class JavaScriptComponent extends ConfigEntityBase implements CanvasAssetI
         continue;
       }
 
+      // @todo Removed this in https://drupal.org/i/3516754 when validation
+      //   correctly determines that `[[]]` does not actually contain example
+      //   values.
+      if (isset($prop_schema['examples'])) {
+        \assert(\is_array($prop_schema['examples']));
+        // Apply array_filter to every element inside the parent array
+        $prop_schema['examples'] = array_filter($prop_schema['examples']);
+      }
+
       // Determine the type (handle both string and array forms).
       $type = \is_array($prop_schema['type'] ?? '')
         ? $prop_schema['type'][0]
