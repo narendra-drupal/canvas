@@ -152,7 +152,9 @@ export function serializeProps(props: CodeComponentProp[]) {
               isNumberType && !allowMultiple
                 ? Number(example)
                 : isNumberType && allowMultiple && Array.isArray(example)
-                  ? example.map((v) => Number(v))
+                  ? // Filter out empty strings before converting to numbers
+                    // to prevent empty values from becoming 0
+                    example.filter((v) => v !== '').map((v) => Number(v))
                   : isVideo &&
                       typeof example === 'object' &&
                       !Array.isArray(example)

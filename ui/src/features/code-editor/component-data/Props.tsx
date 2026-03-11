@@ -477,16 +477,12 @@ export default function Props() {
                       if (value === VALUE_MODE_LIMITED) {
                         // When switching to limited mode, ensure we have exactly limitedCount items
                         const count = prop.limitedCount ?? 1;
-                        const itemType =
-                          prop.type === 'array' ? prop.items?.type : prop.type;
-                        const defaultValue =
-                          itemType === 'integer' || itemType === 'number'
-                            ? 0
-                            : '';
+                        // Use empty string as default to match single-value component behavior
+                        // (no default value unless explicitly set or required)
                         updates.example = createArrayWithCount(
                           prop.example,
                           count,
-                          defaultValue,
+                          '',
                         ) as string[] | number[];
                       }
 
@@ -543,19 +539,13 @@ export default function Props() {
                             maxLimit,
                             Math.max(1, Number(e.target.value)),
                           );
-                          const itemType =
-                            prop.type === 'array'
-                              ? prop.items?.type
-                              : prop.type;
-                          const defaultValue =
-                            itemType === 'integer' || itemType === 'number'
-                              ? 0
-                              : '';
+                          // Use empty string as default to match single-value component behavior
+                          // (no default value unless explicitly set or required)
                           updateLimitedCount(
                             prop.id,
                             prop.example,
                             newCount,
-                            defaultValue,
+                            '',
                           );
                         }}
                         disabled={componentStatus}
@@ -568,20 +558,13 @@ export default function Props() {
                                 const currentCount = prop.limitedCount ?? 1;
                                 if (currentCount <= 1) return;
                                 const newCount = currentCount - 1;
-                                const itemType =
-                                  prop.type === 'array'
-                                    ? prop.items?.type
-                                    : prop.type;
-                                const defaultValue =
-                                  itemType === 'integer' ||
-                                  itemType === 'number'
-                                    ? 0
-                                    : '';
+                                // Use empty string as default to match single-value component behavior
+                                // (no default value unless explicitly set or required)
                                 updateLimitedCount(
                                   prop.id,
                                   prop.example,
                                   newCount,
-                                  defaultValue,
+                                  '',
                                 );
                               }}
                               disabled={
@@ -619,20 +602,13 @@ export default function Props() {
                                   : Infinity;
                                 if (currentCount >= maxLimit) return;
                                 const newCount = currentCount + 1;
-                                const itemType =
-                                  prop.type === 'array'
-                                    ? prop.items?.type
-                                    : prop.type;
-                                const defaultValue =
-                                  itemType === 'integer' ||
-                                  itemType === 'number'
-                                    ? 0
-                                    : '';
+                                // Use empty string as default to match single-value component behavior
+                                // (no default value unless explicitly set or required)
                                 updateLimitedCount(
                                   prop.id,
                                   prop.example,
                                   newCount,
-                                  defaultValue,
+                                  '',
                                 );
                               }}
                               disabled={(() => {
