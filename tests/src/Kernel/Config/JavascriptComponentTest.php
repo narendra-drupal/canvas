@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\canvas\Kernel\Config;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Drupal\canvas\Entity\EntityConstraintViolationList;
 use Drupal\canvas\Entity\JavaScriptComponent;
@@ -118,19 +119,12 @@ class JavascriptComponentTest extends CanvasKernelTestBase {
     ], $js_component->getCacheTags());
   }
 
-  /**
-   * Tests that array prop enum/meta:enum are normalized from array to items level.
-   *
-   * @see \Drupal\canvas\Entity\JavaScriptComponent::normalizePropsSchema()
-   */
-  public function testArrayPropEnumNormalization(): void {
-    // Create component with enum/meta:enum at array level (as client sends).
-    $client_data = [
-      'machineName' => 'enum_array_test',
-      'name' => 'Enum Array Test',
-      'status' => TRUE,
-      'required' => [],
-      'props' => [
+  public static function providerNormalizePropsSchema(): \Generator {
+    // Verify enum/meta:enum/x-translation-context were moved to items level.
+    // Key order follows config schema merge order: prop_shape.array keys
+    // (type, items) come first, then prop.* keys (title, examples).
+    yield 'array prop enum normalization' => [
+      'client_data_props' => [
         'tags' => [
           'type' => 'array',
           'title' => 'Tags',
@@ -142,6 +136,40 @@ class JavascriptComponentTest extends CanvasKernelTestBase {
           'examples' => [['option1']],
         ],
       ],
+      'expected_component_props' => [
+        'tags' => [
+          'type' => 'array',
+          'items' => [
+            'type' => 'string',
+            'enum' => ['option1', 'option2'],
+            'meta:enum' => ['option1' => 'Option 1', 'option2' => 'Option 2'],
+            'x-translation-context' => 'Tag selection',
+          ],
+          'title' => 'Tags',
+          'examples' => [['option1']],
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Tests that props schema is normalized correctly.
+   *
+   * @param array $client_data_props
+   *   The props to include in client data.
+   * @param array $expected_component_props
+   *   The expected props after normalization.
+   *
+   * @see \Drupal\canvas\Entity\JavaScriptComponent::normalizePropsSchema()
+   */
+  #[DataProvider('providerNormalizePropsSchema')]
+  public function testNormalizePropsSchema(array $client_data_props, array $expected_component_props): void {
+    $client_data = [
+      'machineName' => 'normalize_props_test',
+      'name' => 'Normalize Props Test',
+      'status' => TRUE,
+      'required' => [],
+      'props' => $client_data_props,
       'slots' => [],
       'sourceCodeJs' => 'console.log("test")',
       'sourceCodeCss' => '',
@@ -153,23 +181,7 @@ class JavascriptComponentTest extends CanvasKernelTestBase {
 
     $js_component = JavaScriptComponent::createFromClientSide($client_data);
     $this->assertSame(SAVED_NEW, $js_component->save());
-
-    // Verify enum/meta:enum/x-translation-context were moved to items level.
-    // Key order follows config schema merge order: prop_shape.array keys
-    // (type, items) come first, then prop.* keys (title, examples).
-    $this->assertSame([
-      'tags' => [
-        'type' => 'array',
-        'items' => [
-          'type' => 'string',
-          'enum' => ['option1', 'option2'],
-          'meta:enum' => ['option1' => 'Option 1', 'option2' => 'Option 2'],
-          'x-translation-context' => 'Tag selection',
-        ],
-        'title' => 'Tags',
-        'examples' => [['option1']],
-      ],
-    ], $js_component->get('props'));
+    $this->assertSame($expected_component_props, $js_component->get('props'));
   }
 
 }
