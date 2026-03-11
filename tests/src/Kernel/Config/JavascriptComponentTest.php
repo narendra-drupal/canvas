@@ -150,6 +150,26 @@ class JavascriptComponentTest extends CanvasKernelTestBase {
         ],
       ],
     ];
+    yield 'array prop examples normalization' => [
+      'client_data_props' => [
+        'tags' => [
+          'type' => 'array',
+          'title' => 'Tags',
+          'items' => ['type' => 'string'],
+          'examples' => [[]],
+        ],
+      ],
+      'expected_component_props' => [
+        'tags' => [
+          'type' => 'array',
+          'items' => [
+            'type' => 'string',
+          ],
+          'title' => 'Tags',
+          'examples' => [],
+        ],
+      ],
+    ];
   }
 
   /**
@@ -180,6 +200,7 @@ class JavascriptComponentTest extends CanvasKernelTestBase {
     ];
 
     $js_component = JavaScriptComponent::createFromClientSide($client_data);
+    self::assertCount(0, $js_component->getTypedData()->validate());
     $this->assertSame(SAVED_NEW, $js_component->save());
     $this->assertSame($expected_component_props, $js_component->get('props'));
   }
