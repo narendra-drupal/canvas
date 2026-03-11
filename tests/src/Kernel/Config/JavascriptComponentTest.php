@@ -124,9 +124,6 @@ class JavascriptComponentTest extends CanvasKernelTestBase {
    * @see \Drupal\canvas\Entity\JavaScriptComponent::normalizePropsSchema()
    */
   public function testArrayPropEnumNormalization(): void {
-    // Enable canvas_dev_mode to unlock array type support.
-    $this->enableModules(['canvas_dev_mode']);
-
     // Create component with enum/meta:enum at array level (as client sends).
     $client_data = [
       'machineName' => 'enum_array_test',
