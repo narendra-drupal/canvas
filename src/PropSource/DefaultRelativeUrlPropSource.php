@@ -116,7 +116,8 @@ final class DefaultRelativeUrlPropSource extends PropSourceBase {
    * {@inheritdoc}
    */
   public function evaluate(?FieldableEntityInterface $host_entity, bool $is_required): EvaluationResult {
-    if (\is_string($this->value) && self::isUrlJsonSchema($this->jsonSchema)) {
+    if (\is_string($this->value)) {
+      \assert(self::isUrlJsonSchema($this->jsonSchema));
       $generated_url = $this->componentSource->rewriteExampleUrl($this->value);
       return new EvaluationResult(
         $generated_url->getGeneratedUrl(),
@@ -133,26 +134,7 @@ final class DefaultRelativeUrlPropSource extends PropSourceBase {
 
   private static function recurse(array $json_schema, mixed $value, UrlRewriteInterface $component_source): mixed {
     if ($json_schema['type'] === 'array') {
-      // Validate that value matches the schema type.
-      if (!\is_array($value)) {
-        throw new \InvalidArgumentException(\sprintf(
-          'Schema defines type "array" but example value is %s. ' .
-          'This indicates a malformed component definition. ' .
-          'Check the examples in the component YAML.',
-          get_debug_type($value)
-        ));
-      }
-      // Validate that it's a proper list (sequential numeric keys).
-      // JSON schema arrays must be lists, not associative arrays.
-      if (!empty($value) && !array_is_list($value)) {
-        throw new \InvalidArgumentException(\sprintf(
-          'Array-type props must use sequential numeric keys ' .
-          '[0, 1, 2, ...] to form a proper list. Got associative ' .
-          'array with keys: [%s]. This indicates a malformed ' .
-          'component definition.',
-          implode(', ', \array_keys($value))
-        ));
-      }
+      \assert(array_is_list($value));
       $evaluated = [];
       foreach ($value as $k => $v) {
         $evaluated[$k] = self::recurse($json_schema['items'], $v, $component_source);
@@ -160,16 +142,7 @@ final class DefaultRelativeUrlPropSource extends PropSourceBase {
       return $evaluated;
     }
     elseif ($json_schema['type'] === 'object') {
-      // Validate that value is an array (JSON objects are represented as
-      // associative arrays in PHP).
-      if (!\is_array($value)) {
-        throw new \InvalidArgumentException(\sprintf(
-          'Schema defines type "object" but example value is %s. ' .
-          'This indicates a malformed component definition. ' .
-          'Check the examples in the component YAML.',
-          get_debug_type($value)
-        ));
-      }
+      \assert(!array_is_list($value));
       $evaluated = [];
       foreach ($value as $k => $v) {
         $evaluated[$k] = self::recurse($json_schema['properties'][$k], $v, $component_source);
