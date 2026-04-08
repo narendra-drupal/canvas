@@ -283,6 +283,10 @@ class TranslationTest extends FunctionalTestBase {
     // translation.
     $french_inputs = $updated_item_inputs;
     $french_inputs['heading'] = 'bonjour, monde!';
+    // The `cta1href` prop even though it is `type: string` also has
+    // `format: uri-reference` so it should not be translatable in symmetric
+    // translations.
+    unset($french_inputs['cta1href']);
     $french_list = $translation->get('field_canvas_test');
     \assert($french_list instanceof ComponentTreeItemList);
     $french_item = $french_list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
