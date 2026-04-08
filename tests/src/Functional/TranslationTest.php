@@ -287,6 +287,8 @@ class TranslationTest extends FunctionalTestBase {
     // `format: uri-reference` so it should not be translatable in symmetric
     // translations.
     unset($french_inputs['cta1href']);
+    // `attributes` should also not be translatable.
+    unset($french_inputs['attributes']);
     $french_list = $translation->get('field_canvas_test');
     \assert($french_list instanceof ComponentTreeItemList);
     $french_item = $french_list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
