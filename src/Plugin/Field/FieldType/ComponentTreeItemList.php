@@ -480,8 +480,15 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
       $component->loadVersion($item->getComponentVersion());
 
       $source = $component->getComponentSource();
+      $parent_entity = NULL;
+      if ($this->parent) {
+        $parent_value = $this->parent->getValue();
+        if ($parent_value instanceof FieldableEntityInterface) {
+          $parent_entity = $parent_value;
+        }
+      }
       try {
-        $explicit_input = $source->getExplicitInput($uuid, $item);
+        $explicit_input = $source->getExplicitInput($uuid, $item, $parent_entity);
       }
       catch (\Throwable $e) {
         $hydrated[$uuid] = [

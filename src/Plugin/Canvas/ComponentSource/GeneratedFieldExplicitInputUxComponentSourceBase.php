@@ -357,6 +357,12 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
         'source' => [],
       ];
     }
+    if ($host_entity instanceof FieldableEntityInterface && $host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
+      $default_host_translation = $host_entity->getUntranslated();
+      $default_translation_item = $this->componentTreeLoader->load($default_host_translation)->getComponentTreeItemByUuid($uuid);
+      $default_translation_explicit_input = $this->getExplicitInput($uuid, $default_translation_item, $default_host_translation);
+      \assert(isset($default_translation_explicit_input['resolved']));
+    }
 
     // Prop sources can only evaluate structured data from fieldable entities,
     // but the component tree may be contained by a config entity.
@@ -396,6 +402,15 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
 
     // @phpstan-ignore staticMethod.alreadyNarrowedType
     \assert(Inspector::assertAllObjects($resolved_values, EvaluationResult::class));
+    if (isset($default_translation_explicit_input['resolved'])) {
+      foreach ($default_translation_explicit_input['resolved'] as $prop => $resolved_value) {
+        if (!isset($resolved_values[$prop])) {
+          $resolved_values[$prop] = $default_translation_explicit_input['resolved'][$prop];
+        }
+
+      }
+    }
+
     return [
       'source' => $values,
       'resolved' => $resolved_values,
