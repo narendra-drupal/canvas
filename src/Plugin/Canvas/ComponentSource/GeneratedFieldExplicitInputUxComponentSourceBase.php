@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\canvas\Plugin\Canvas\ComponentSource;
 
+use Drupal\canvas\Entity\ComponentTreeEntityInterface;
 use Drupal\canvas\InvalidComponentInputsPropSourceException;
 use Drupal\canvas\Entity\ContentTemplate;
 use Drupal\canvas\PropSource\EntityFieldPropSource;
@@ -24,6 +25,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Field\WidgetPluginManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Http\Exception\CacheableAccessDeniedHttpException;
@@ -667,6 +669,8 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
           unset($resolvedInputValues[$prop]);
         }
       }
+
+      $resolvedInputValues = $this->mergeRequiredDefaultTranslationValues($resolvedInputValues, $entity, $component_instance_uuid);
 
       $this->componentValidator->validateProps($resolvedInputValues, $this->getComponentPlugin());
     }
@@ -1518,6 +1522,41 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     // phpcs:ignore
     /** @var PropSourceArray $value */
     return PropSource::parse($value);
+  }
+
+  private function mergeRequiredDefaultTranslationValues(array $resolvedInputValues, ?FieldableEntityInterface $entity, string $component_instance_uuid): array {
+    if (!$entity instanceof TranslatableInterface ||!$entity->isTranslatable() || $entity->isDefaultTranslation()) {
+      return $resolvedInputValues;
+    }
+    // Only dealing with Pages for now.
+    \assert($entity instanceof ComponentTreeEntityInterface);
+    // @todo should send more args from validateComponentInput to make getting this easier
+    $translatable_props = $this->getTranslatableProperties($component_instance_uuid, $entity);
+    $defaultTranslationResolvedInputValues = $this->getDefaultTranslationResolvedInputValues($entity, $component_instance_uuid);
+    foreach ($defaultTranslationResolvedInputValues as $prop_name => $defaultTranslationResolvedInputValue) {
+      if (!\array_key_exists($prop_name, $translatable_props) && !\in_array($prop_name, $resolvedInputValues, TRUE)) {
+        // @todo Should we only merge required props?
+        $resolvedInputValues[$prop_name] = $defaultTranslationResolvedInputValue;
+      }
+    }
+    return $resolvedInputValues;
+
+  }
+
+  private function getTranslatableProperties(string $component_instance_uuid, ComponentTreeEntityInterface $entity): array {
+    // @todo determine translatable properties.
+    //   Copy logic for this from src/Config/Schema/ComponentSpecificInputs.php
+    //   which is copied from https://git.drupalcode.org/project/canvas/-/merge_requests/868
+    //   see local branch 3582478-config-schema-component-specific-inputs or
+    //   /Users/ted.bowman/sites/exp-d-core99/modules/contrib/experience_builder/src/Config/Schema/ComponentSpecificInputs.php
+    return [];
+  }
+
+  private function getDefaultTranslationResolvedInputValues(TranslatableInterface $entity, string $component_instance_uuid): array {
+    \assert($entity instanceof ComponentTreeEntityInterface);
+    \assert(!$entity->isDefaultTranslation());
+    // @todo get the input values for the component $component_instance_uuid instance.
+    return [];
   }
 
 }
