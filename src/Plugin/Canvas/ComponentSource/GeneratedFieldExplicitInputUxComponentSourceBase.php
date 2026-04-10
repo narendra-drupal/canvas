@@ -15,6 +15,7 @@ use Drupal\canvas\PropExpressions\StructuredData\EvaluationResult;
 use Drupal\canvas\PropExpressions\StructuredData\StructuredDataPropExpression;
 use Drupal\canvas\ShapeMatcher\PropSourceSuggester;
 use Drupal\canvas\PropSource\HostEntityUrlPropSource;
+use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\canvas\Utility\ComponentMetadataHelper;
 use Drupal\Component\Assertion\Inspector;
 use Drupal\Component\Plugin\DependentPluginInterface;
@@ -53,6 +54,7 @@ use Drupal\canvas\PropSource\PropSourceBase;
 use Drupal\canvas\PropSource\StaticPropSource;
 use Drupal\canvas\ShapeMatcher\EntityFieldPropSourceMatcher;
 use Drupal\canvas\Utility\TypedDataHelper;
+use Drupal\node\Entity\Node;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\NotAcceptableHttpException;
 use Symfony\Component\Validator\ConstraintViolation;
@@ -114,6 +116,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     private readonly PropSourceSuggester $propSourceSuggester,
     private readonly LoggerChannelInterface $logger,
     protected readonly PropShapeRepositoryInterface $propShapeRepository,
+    private readonly ComponentTreeLoader $componentTreeLoader,
   ) {
     \assert(\array_key_exists('local_source_id', $configuration));
     parent::__construct($configuration, $plugin_id, $plugin_definition);
@@ -134,6 +137,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
       $container->get(PropSourceSuggester::class),
       $container->get('logger.channel.canvas'),
       $container->get(PropShapeRepositoryInterface::class),
+      $container->get(ComponentTreeLoader::class),
     );
   }
 
@@ -1529,12 +1533,11 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
       return $resolvedInputValues;
     }
     // Only dealing with Pages for now.
-    \assert($entity instanceof ComponentTreeEntityInterface);
     // @todo should send more args from validateComponentInput to make getting this easier
     $translatable_props = $this->getTranslatableProperties($component_instance_uuid, $entity);
     $defaultTranslationResolvedInputValues = $this->getDefaultTranslationResolvedInputValues($entity, $component_instance_uuid);
     foreach ($defaultTranslationResolvedInputValues as $prop_name => $defaultTranslationResolvedInputValue) {
-      if (!\array_key_exists($prop_name, $translatable_props) && !\in_array($prop_name, $resolvedInputValues, TRUE)) {
+      if (!\array_key_exists($prop_name, $translatable_props) && !\array_key_exists($prop_name, $resolvedInputValues)) {
         // @todo Should we only merge required props?
         $resolvedInputValues[$prop_name] = $defaultTranslationResolvedInputValue;
       }
@@ -1543,7 +1546,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
 
   }
 
-  private function getTranslatableProperties(string $component_instance_uuid, ComponentTreeEntityInterface $entity): array {
+  private function getTranslatableProperties(string $component_instance_uuid, TranslatableInterface $entity): array {
     // @todo determine translatable properties.
     //   Copy logic for this from src/Config/Schema/ComponentSpecificInputs.php
     //   which is copied from https://git.drupalcode.org/project/canvas/-/merge_requests/868
@@ -1553,10 +1556,31 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
   }
 
   private function getDefaultTranslationResolvedInputValues(TranslatableInterface $entity, string $component_instance_uuid): array {
-    \assert($entity instanceof ComponentTreeEntityInterface);
     \assert(!$entity->isDefaultTranslation());
-    // @todo get the input values for the component $component_instance_uuid instance.
-    return [];
+
+    $default_entity = $entity->getUntranslated();
+    \assert($default_entity instanceof FieldableEntityInterface);
+
+    $item = $this->componentTreeLoader->load($default_entity)->getComponentTreeItemByUuid($component_instance_uuid);
+    if ($item === NULL) {
+      return [];
+    }
+
+    $resolved = [];
+    foreach ($item->getInputs() ?? [] as $prop_name => $raw_prop_source) {
+      try {
+        $value = $this->uncollapse($raw_prop_source, $prop_name)
+          ->evaluate($default_entity, is_required: FALSE)->value;
+        if ($value !== NULL) {
+          $resolved[$prop_name] = $value;
+        }
+      }
+      catch (\Throwable) {
+        // If a prop source cannot be evaluated against the default translation,
+        // skip it — validation will handle the absence.
+      }
+    }
+    return $resolved;
   }
 
 }
