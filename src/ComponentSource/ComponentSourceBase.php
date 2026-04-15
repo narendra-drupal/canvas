@@ -37,7 +37,6 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     array $plugin_definition,
     protected readonly ComponentTreeLoader $componentTreeLoader,
   ) {
-    \assert(\array_key_exists('local_source_id', $configuration));
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
 

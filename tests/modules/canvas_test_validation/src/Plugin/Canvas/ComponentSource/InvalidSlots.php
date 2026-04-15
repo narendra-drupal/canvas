@@ -7,12 +7,15 @@ namespace Drupal\canvas_test_validation\Plugin\Canvas\ComponentSource;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\canvas\Attribute\ComponentSource;
 use Drupal\canvas\ComponentSource\ComponentSourceBase;
 use Drupal\canvas\ComponentSource\ComponentSourceWithSlotsInterface;
 use Drupal\canvas\Entity\Component;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
+use Drupal\canvas\Storage\ComponentTreeLoader;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
@@ -25,9 +28,27 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
   supportsImplicitInputs: TRUE,
   discovery: FALSE,
 )]
-final class InvalidSlots extends ComponentSourceBase implements ComponentSourceWithSlotsInterface {
+final class InvalidSlots extends ComponentSourceBase implements ComponentSourceWithSlotsInterface, ContainerFactoryPluginInterface {
 
   public const string PLUGIN_ID = 'invalid_slots';
+
+  public function __construct(
+    array $configuration,
+    string $plugin_id,
+    array $plugin_definition,
+    ComponentTreeLoader $componentTreeLoader,
+  ) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $componentTreeLoader);
+  }
+
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get(ComponentTreeLoader::class),
+    );
+  }
 
   /**
    * {@inheritdoc}
