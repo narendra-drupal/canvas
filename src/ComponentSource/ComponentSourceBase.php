@@ -15,6 +15,7 @@ use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 use Drupal\Core\Plugin\ContextAwarePluginTrait;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
  * @internal
@@ -235,11 +236,30 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     return $explicit_input;
   }
 
-  protected function getDefaultTranslation(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
-    if ($host_entity instanceof FieldableEntityInterface && $host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
+  protected function getDefaultTranslationEntity(?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
+    if ($host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
       return $host_entity->getUntranslated();
     }
     return NULL;
+  }
+
+  protected function getDefaultTranslation(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
+    return $this->getDefaultTranslationEntity($host_entity);
+  }
+
+  public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
+    $default_entity = $this->getDefaultTranslationEntity($entity);
+    if ($default_entity !== NULL) {
+      $default_item = $this->componentTreeLoader->load($default_entity)->getComponentTreeItemByUuid($component_instance_uuid);
+      if ($default_item !== NULL) {
+        foreach ($default_item->getInputs() ?? [] as $key => $value) {
+          if (!array_key_exists($key, $inputValues)) {
+            $inputValues[$key] = $value;
+          }
+        }
+      }
+    }
+    return $this->doValidateComponentInput($inputValues, $component_instance_uuid, $entity);
   }
 
 
@@ -264,6 +284,8 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
   }
 
   abstract protected function doGetExplicitInput(string $uuid, ComponentTreeItem $default_translation_item, FieldableEntityInterface $default_translation): array;
+
+  abstract protected function doValidateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface;
 
   protected function mergeDefaultExplicit(array $default_translation_explicit_input, array $explicit_input, ?FieldableEntityInterface $host_entity): array {
     return array_merge($default_translation_explicit_input, $explicit_input);

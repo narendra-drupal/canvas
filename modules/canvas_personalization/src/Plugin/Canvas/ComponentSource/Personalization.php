@@ -14,6 +14,7 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Validation\BasicRecursiveValidatorFactory;
 use Drupal\canvas\Attribute\ComponentSource;
 use Drupal\canvas\ComponentSource\ComponentSourceBase;
+use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\canvas\ComponentSource\ComponentSourceWithSlotsInterface;
 use Drupal\canvas\ComponentSource\ComponentSourceWithSwitchCasesInterface;
 use Drupal\canvas\Entity\Component;
@@ -66,9 +67,9 @@ final class Personalization extends ComponentSourceBase implements
     string $plugin_id,
     array $plugin_definition,
     private readonly BasicRecursiveValidatorFactory $validatorFactory,
+    ComponentTreeLoader $componentTreeLoader,
   ) {
-    \assert(\array_key_exists('local_source_id', $configuration));
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $componentTreeLoader);
   }
 
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
@@ -77,6 +78,7 @@ final class Personalization extends ComponentSourceBase implements
       $plugin_id,
       $plugin_definition,
       $container->get(BasicRecursiveValidatorFactory::class),
+      $container->get(ComponentTreeLoader::class),
     );
   }
 
@@ -221,7 +223,7 @@ final class Personalization extends ComponentSourceBase implements
     return $client_model['resolved'] ?? [];
   }
 
-  public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
+  protected function doValidateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
     $variant_id_constraints = new Sequentially([
       new Type('string'),
       new NotBlank(),
