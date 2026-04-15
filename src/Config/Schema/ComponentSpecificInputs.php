@@ -12,7 +12,7 @@ use Drupal\Core\TypedData\MapDataDefinition;
 use Drupal\Core\TypedData\TypedDataInterface;
 
 /**
- * Generates a mapping definition
+ * Generates a mapping definition.
  *
  * @internal
  *
@@ -45,7 +45,7 @@ final class ComponentSpecificInputs extends Mapping {
     }
     // `field.value.component_tree` is a subtype of the
     // `canvas.component_tree_node` config schema type.
-    if (!in_array($parent->getDataDefinition()->getDataType(), ['canvas.component_tree_node', 'field.value.component_tree'], TRUE)) {
+    if (!\in_array($parent->getDataDefinition()->getDataType(), ['canvas.component_tree_node', 'field.value.component_tree'], TRUE)) {
       throw new \LogicException(\sprintf('$parent must be of type `canvas.component_tree_node`, `%s` given.', $parent->getDataDefinition()->getDataType()));
     }
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\canvas\Plugin\Canvas\ComponentSource;
 
-use Drupal\canvas\Entity\ComponentTreeEntityInterface;
 use Drupal\canvas\InvalidComponentInputsPropSourceException;
 use Drupal\canvas\Entity\ContentTemplate;
 use Drupal\canvas\PropSource\EntityFieldPropSource;
@@ -53,7 +52,6 @@ use Drupal\canvas\PropSource\PropSourceBase;
 use Drupal\canvas\PropSource\StaticPropSource;
 use Drupal\canvas\ShapeMatcher\EntityFieldPropSourceMatcher;
 use Drupal\canvas\Utility\TypedDataHelper;
-use Drupal\node\Entity\Node;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\NotAcceptableHttpException;
 use Symfony\Component\Validator\ConstraintViolation;
@@ -410,7 +408,6 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     }
     return $explicit_input;
   }
-
 
   /**
    * {@inheritdoc}
@@ -1535,6 +1532,5 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     /** @var PropSourceArray $value */
     return PropSource::parse($value);
   }
-
 
 }

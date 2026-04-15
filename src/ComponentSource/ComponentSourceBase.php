@@ -252,7 +252,7 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
       $default_item = $this->componentTreeLoader->load($default_entity)->getComponentTreeItemByUuid($component_instance_uuid);
       if ($default_item !== NULL) {
         foreach ($default_item->getInputs() ?? [] as $key => $value) {
-          if (!array_key_exists($key, $inputValues)) {
+          if (!\array_key_exists($key, $inputValues)) {
             $inputValues[$key] = $value;
           }
         }
@@ -260,7 +260,6 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     }
     return $this->doValidateComponentInput($inputValues, $component_instance_uuid, $entity);
   }
-
 
   /**
    * {@inheritdoc}
