@@ -188,7 +188,7 @@ class TranslationTest extends FunctionalTestBase {
 
     $page->pressButton('Save configuration');
     $this->assertSession()->pageTextContains('Settings successfully updated.');
-    $original_node = $this->createCanvasNodeWithTranslation();
+    $original_node = $this->createCanvasNodeWithTranslation(\in_array('inputs', $translatable_properties, TRUE));
     $this->assertTrue($original_node->isDefaultTranslation());
     $translated_node = $original_node->getTranslation('fr');
     $this->assertSame('The French title', (string) $translated_node->getTitle());
@@ -259,7 +259,7 @@ class TranslationTest extends FunctionalTestBase {
    * @return \Drupal\node\Entity\Node
    *   The default translation of the node.
    */
-  protected function createCanvasNodeWithTranslation(): Node {
+  protected function createCanvasNodeWithTranslation(bool $translatable_inputs): Node {
     $node = $this->createTestNode();
     $list = $node->get('field_canvas_test');
     \assert($list instanceof ComponentTreeItemList);
@@ -277,18 +277,20 @@ class TranslationTest extends FunctionalTestBase {
     $updated_item = $list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
     \assert($updated_item instanceof ComponentTreeItem);
     $updated_item_inputs = $updated_item->getInputs();
-
     // In both the Symmetric and Asymmetric translation cases, the `inputs` and
     // `label` field properties are translatable and this should only change the
     // translation.
     $french_inputs = $updated_item_inputs;
     $french_inputs['heading'] = 'bonjour, monde!';
-    // The `cta1href` prop even though it is `type: string` also has
-    // `format: uri-reference` so it should not be translatable in symmetric
-    // translations.
-    unset($french_inputs['cta1href']);
-    // `attributes` should also not be translatable.
-    unset($french_inputs['attributes']);
+    if ($translatable_inputs) {
+      // The `cta1href` prop even though it is `type: string` also has
+      // `format: uri-reference` so it should not be translatable in symmetric
+      // translations.
+      unset($french_inputs['cta1href']);
+      // `attributes` should also not be translatable.
+      unset($french_inputs['attributes']);
+    }
+
     $french_list = $translation->get('field_canvas_test');
     \assert($french_list instanceof ComponentTreeItemList);
     $french_item = $french_list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
