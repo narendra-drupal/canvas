@@ -357,15 +357,14 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
         'source' => [],
       ];
     }
-    if ($host_entity instanceof FieldableEntityInterface && $host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
-      $default_host_translation = $host_entity->getUntranslated();
-      $default_translation_item = $this->componentTreeLoader->load($default_host_translation)->getComponentTreeItemByUuid($uuid);
+    $default_translation = $this->getDefaultTranslation($uuid, $item, $host_entity);
+    if ($default_translation) {
+      $default_translation_item = $this->componentTreeLoader->load($default_translation)->getComponentTreeItemByUuid($uuid);
       if ($default_translation_item) {
         // The default translation has the component instance.
-        $default_translation_explicit_input = $this->getExplicitInput($uuid, $default_translation_item, $default_host_translation);
+        $default_translation_explicit_input = $this->getExplicitInput($uuid, $default_translation_item, $default_translation);
         \assert(isset($default_translation_explicit_input['resolved']));
       }
-
     }
 
     // Prop sources can only evaluate structured data from fieldable entities,
@@ -1600,6 +1599,13 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
       }
     }
     return $resolved;
+  }
+
+  private function getDefaultTranslation(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
+    if ($host_entity instanceof FieldableEntityInterface && $host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
+      return $host_entity->getUntranslated();
+    }
+    return NULL;
   }
 
 }
