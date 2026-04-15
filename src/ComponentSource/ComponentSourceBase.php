@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Drupal\canvas\ComponentSource;
 
 use Drupal\canvas\Entity\Component;
+use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\Schema\Mapping;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 use Drupal\Core\Plugin\ContextAwarePluginTrait;
 use Drupal\Core\Plugin\PluginBase;
@@ -27,6 +29,16 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
 
   use ContextAwarePluginAssignmentTrait;
   use ContextAwarePluginTrait;
+
+  public function __construct(
+    array $configuration,
+    string $plugin_id,
+    array $plugin_definition,
+    protected readonly ComponentTreeLoader $componentTreeLoader,
+  ) {
+    \assert(\array_key_exists('local_source_id', $configuration));
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+  }
 
   public function determineDefaultFolder(): string {
     return 'Other';
@@ -206,6 +218,31 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     );
   }
 
+  public function getExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
+    $default_translation = $this->getDefaultTranslation($uuid, $item, $host_entity);
+    $default_translation_explicit_input = NULL;
+    if ($default_translation) {
+      $default_translation_item = $this->componentTreeLoader->load($default_translation)->getComponentTreeItemByUuid($uuid);
+      if ($default_translation_item) {
+        // The default translation has the component instance.
+        $default_translation_explicit_input = $this->doGetExplicitInput($uuid, $default_translation_item, $default_translation);
+      }
+    }
+    $explicit_input = $this->doGetExplicitInput($uuid, $item, $host_entity);
+    if ($default_translation_explicit_input) {
+      $explicit_input = $this->mergeDefaultExplicit($default_translation_explicit_input, $explicit_input, $host_entity);
+    }
+    return $explicit_input;
+  }
+
+  protected function getDefaultTranslation(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
+    if ($host_entity instanceof FieldableEntityInterface && $host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
+      return $host_entity->getUntranslated();
+    }
+    return NULL;
+  }
+
+
   /**
    * {@inheritdoc}
    */
@@ -224,6 +261,12 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     \assert($discovery instanceof ComponentCandidatesDiscoveryInterface);
 
     $discovery->checkRequirements($this->getSourceSpecificComponentId());
+  }
+
+  abstract protected function doGetExplicitInput(string $uuid, ComponentTreeItem $default_translation_item, FieldableEntityInterface $default_translation): array;
+
+  protected function mergeDefaultExplicit(array $default_translation_explicit_input, array $explicit_input, ?FieldableEntityInterface $host_entity): array {
+    return array_merge($default_translation_explicit_input, $explicit_input);
   }
 
 }

@@ -116,10 +116,9 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     private readonly PropSourceSuggester $propSourceSuggester,
     private readonly LoggerChannelInterface $logger,
     protected readonly PropShapeRepositoryInterface $propShapeRepository,
-    private readonly ComponentTreeLoader $componentTreeLoader,
+    ComponentTreeLoader $componentTreeLoader,
   ) {
-    \assert(\array_key_exists('local_source_id', $configuration));
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $componentTreeLoader);
   }
 
   /**
@@ -350,21 +349,12 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
   /**
    * {@inheritdoc}
    */
-  public function getExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
+  public function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
     if (!$this->requiresExplicitInput()) {
       return [
         'resolved' => [],
         'source' => [],
       ];
-    }
-    $default_translation = $this->getDefaultTranslation($uuid, $item, $host_entity);
-    if ($default_translation) {
-      $default_translation_item = $this->componentTreeLoader->load($default_translation)->getComponentTreeItemByUuid($uuid);
-      if ($default_translation_item) {
-        // The default translation has the component instance.
-        $default_translation_explicit_input = $this->getExplicitInput($uuid, $default_translation_item, $default_translation);
-        \assert(isset($default_translation_explicit_input['resolved']));
-      }
     }
 
     // Prop sources can only evaluate structured data from fieldable entities,
@@ -405,20 +395,23 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
 
     // @phpstan-ignore staticMethod.alreadyNarrowedType
     \assert(Inspector::assertAllObjects($resolved_values, EvaluationResult::class));
-    if (isset($default_translation_explicit_input['resolved'])) {
-      foreach ($default_translation_explicit_input['resolved'] as $prop => $resolved_value) {
-        if (!isset($resolved_values[$prop])) {
-          $resolved_values[$prop] = $default_translation_explicit_input['resolved'][$prop];
-        }
-
-      }
-    }
-
     return [
       'source' => $values,
       'resolved' => $resolved_values,
     ];
   }
+
+  protected function mergeDefaultExplicit(array $default_translation_explicit_input, array $explicit_input, ?FieldableEntityInterface $host_entity): array {
+    if (isset($default_translation_explicit_input['resolved'])) {
+      foreach ($default_translation_explicit_input['resolved'] as $prop => $resolved_value) {
+        if (!isset($explicit_input['resolved'][$prop])) {
+          $explicit_input['resolved'][$prop] = $default_translation_explicit_input['resolved'][$prop];
+        }
+      }
+    }
+    return $explicit_input;
+  }
+
 
   /**
    * {@inheritdoc}
@@ -1601,11 +1594,6 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     return $resolved;
   }
 
-  private function getDefaultTranslation(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
-    if ($host_entity instanceof FieldableEntityInterface && $host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
-      return $host_entity->getUntranslated();
-    }
-    return NULL;
-  }
+
 
 }

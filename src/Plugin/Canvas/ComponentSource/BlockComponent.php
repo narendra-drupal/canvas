@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\canvas\Plugin\Canvas\ComponentSource;
 
+use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\Component\Plugin\Exception\PluginNotFoundException;
 use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Component\Utility\NestedArray;
@@ -101,9 +102,9 @@ final class BlockComponent extends ComponentSourceBase implements ContainerFacto
     private readonly FormBuilderInterface $formBuilder,
     private readonly PluginFormFactoryInterface $pluginFormFactory,
     private readonly AutoSaveManager $autoSaveManager,
+    ComponentTreeLoader $componentTreeLoader,
   ) {
-    \assert(\array_key_exists('local_source_id', $configuration));
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $componentTreeLoader);
   }
 
   /**
@@ -120,6 +121,7 @@ final class BlockComponent extends ComponentSourceBase implements ContainerFacto
       $container->get(FormBuilderInterface::class),
       $container->get(PluginFormFactoryInterface::class),
       $container->get(AutoSaveManager::class),
+      $container->get(ComponentTreeLoader::class),
     );
   }
 
@@ -314,7 +316,7 @@ final class BlockComponent extends ComponentSourceBase implements ContainerFacto
   /**
    * {@inheritdoc}
    */
-  public function getExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
+  public function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
 
     try {
       return $item->getInputs() ?? [];

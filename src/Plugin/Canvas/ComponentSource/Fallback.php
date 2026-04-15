@@ -92,7 +92,7 @@ final class Fallback extends ComponentSourceBase implements ComponentSourceWithS
     return [];
   }
 
-  public function getExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
+  public function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
     return $item->getInputs() ?? [];
   }
 
