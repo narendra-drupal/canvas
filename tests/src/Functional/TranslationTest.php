@@ -457,17 +457,36 @@ class TranslationTest extends FunctionalTestBase {
     $this->assertNotFalse($page);
     $page_id = $page->id();
 
+    // Helper: returns the first component's name from the main content region.
     $get_name_in_api_response = function (string $root_relative_url): ?string {
       $response = $this->makeApiRequest('GET', Url::fromUri("base:$root_relative_url"), []);
       self::assertSame(200, $response->getStatusCode());
       $layout = json_decode((string) $response->getBody(), TRUE)['layout'];
-      return $layout[0]['components'][0]['name'];
+      // The layout may contain multiple regions; find the 'content' region by
+      // its id rather than relying on array position.
+      $content_region = current(array_filter($layout, fn($r) => $r['id'] === 'content'));
+      return $content_region['components'][0]['name'];
+    };
+
+    // Helper: returns the first component's name from the first non-content
+    // region (the PageRegion created by canvas_dev_translation hook_install()).
+    $get_region_name_in_api_response = function (string $root_relative_url): ?string {
+      $response = $this->makeApiRequest('GET', Url::fromUri("base:$root_relative_url"), []);
+      self::assertSame(200, $response->getStatusCode());
+      $layout = json_decode((string) $response->getBody(), TRUE)['layout'];
+      $page_region = current(array_filter($layout, fn($r) => $r['id'] !== 'content'));
+      return $page_region['components'][0]['name'];
     };
 
     // Assert the canvas_page layout API returns the correct translation per
     // language prefix.
     self::assertSame('English heading', $get_name_in_api_response("/canvas/api/v0/layout/canvas_page/$page_id"));
     self::assertSame('French heading', $get_name_in_api_response("/fr/canvas/api/v0/layout/canvas_page/$page_id"));
+
+    // Assert the PageRegion layout API returns the correct translation per
+    // language prefix.
+    self::assertSame('English region heading', $get_region_name_in_api_response("/canvas/api/v0/layout/canvas_page/$page_id"));
+    self::assertSame('French region heading', $get_region_name_in_api_response("/fr/canvas/api/v0/layout/canvas_page/$page_id"));
 
     // Create an article node with English and French translations to use as the
     // ContentTemplate preview entity. The French translation has a distinct

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Drupal\canvas\Entity\ContentTemplate;
 use Drupal\canvas\Entity\Page;
+use Drupal\canvas\Entity\PageRegion;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
 use Drupal\canvas\PropSource\PropSource;
 use Drupal\Core\Language\LanguageManagerInterface;
@@ -70,6 +71,37 @@ function canvas_dev_translation_install(): void {
   $fr_item->setInput(['text' => 'Bonjour, Canvas!', 'element' => 'h1'])
     ->setLabel('French heading');
   $fr_page->save();
+
+  // Create a PageRegion for the first region of the default theme with a
+  // heading component and a French language override, so that global region
+  // translation can be tested manually and in automated tests.
+  $default_theme = \Drupal::service('theme_handler')->getDefault();
+  $regions = PageRegion::createFromBlockLayout($default_theme);
+  $region = reset($regions);
+  \assert($region instanceof PageRegion);
+  $region->set('component_tree', [
+    [
+      'uuid' => '33333333-3333-4333-8333-333333333333',
+      'component_id' => 'sdc.canvas_test_sdc.heading',
+      'component_version' => $version,
+      'inputs' => [
+        'text' => 'Hello from region',
+        'element' => 'h3',
+      ],
+      'label' => 'English region heading',
+    ],
+  ]);
+  $region->enable()->save();
+
+  $region_override = $language_manager->getLanguageConfigOverride('fr', $region->getConfigDependencyName());
+  $region_override->setData([
+    'component_tree' => [
+      0 => [
+        'label' => 'French region heading',
+        'inputs' => ['text' => 'Bonjour de la région'],
+      ],
+    ],
+  ])->save();
 
   // Create a ContentTemplate for node/article/full with French language
   // override, but only if the article content type exists.
