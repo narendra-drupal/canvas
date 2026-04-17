@@ -440,6 +440,9 @@ class TranslationTest extends FunctionalTestBase {
 
   /**
    * Tests that the layout API returns translated content from language-prefixed routes when canvas_dev_translation is enabled.
+   *
+   * @todo This might just be temporary test until we have a Playwright test
+   *    that test this functionality with the translation preview.
    */
   public function testCanvasDevTranslationLayoutApi(): void {
     $module_installer = $this->container->get(ModuleInstallerInterface::class);
