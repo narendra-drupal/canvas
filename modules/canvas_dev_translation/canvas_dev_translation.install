@@ -77,8 +77,15 @@ function canvas_dev_translation_install(): void {
   // translation can be tested manually and in automated tests.
   $default_theme = \Drupal::service('theme_handler')->getDefault();
   $regions = PageRegion::createFromBlockLayout($default_theme);
-  $region = reset($regions);
-  \assert($region instanceof PageRegion);
+  $new_region = reset($regions);
+  \assert($new_region instanceof PageRegion);
+  // The PageRegion may already exist if the developer's site already has one
+  // configured for this theme region. Load it in that case to avoid a duplicate
+  // ID constraint error.
+  $existing = \Drupal::entityTypeManager()
+    ->getStorage(PageRegion::ENTITY_TYPE_ID)
+    ->load($new_region->id());
+  $region = $existing instanceof PageRegion ? $existing : $new_region;
   $region->set('component_tree', [
     [
       'uuid' => '33333333-3333-4333-8333-333333333333',
