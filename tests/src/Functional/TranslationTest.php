@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// cspell:ignore magnifique Propulsé Bienvenue savoir Découvrez Identité visuelle
+// cspell:ignore magnifique Propulsé Bienvenue savoir Découvrez Identité visuelle prévisualisation
 
 namespace Drupal\Tests\canvas\Functional;
 
@@ -469,22 +469,36 @@ class TranslationTest extends FunctionalTestBase {
     self::assertSame('English heading', $get_name_in_api_response("/canvas/api/v0/layout/canvas_page/$page_id"));
     self::assertSame('French heading', $get_name_in_api_response("/fr/canvas/api/v0/layout/canvas_page/$page_id"));
 
-    // Create a minimal article node to use as the ContentTemplate preview
-    // entity.
-    $node = $this->container->get('entity_type.manager')
-      ->getStorage('node')
-      ->create([
-        'type' => 'article',
-        'title' => 'Preview node',
-        'status' => 1,
-      ]);
+    // Create an article node with English and French translations to use as the
+    // ContentTemplate preview entity. The French translation has a distinct
+    // title so we can assert language-aware field resolution.
+    $node_storage = $this->container->get('entity_type.manager')->getStorage('node');
+    $node = $node_storage->create([
+      'type' => 'article',
+      'title' => 'Preview node',
+      'status' => 1,
+    ]);
     $node->save();
+    $fr_node = $node->addTranslation('fr');
+    $fr_node->set('title', 'Nœud de prévisualisation');
+    $fr_node->save();
     $node_id = $node->id();
 
     // Assert the ContentTemplate layout API returns the correct translation per
-    // language prefix.
+    // language prefix (component label from LanguageConfigOverride).
     self::assertSame('English template heading', $get_name_in_api_response("/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
     self::assertSame('French template heading', $get_name_in_api_response("/fr/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
+
+    // Assert the entity field prop source (second component, UUID
+    // '22222222-2222-4222-8221-222222222222') resolves the node title in the
+    // correct language based on the language prefix in the URL.
+    $get_resolved_title_in_api_response = function (string $root_relative_url): mixed {
+      $response = $this->makeApiRequest('GET', Url::fromUri("base:$root_relative_url"), []);
+      self::assertSame(200, $response->getStatusCode());
+      return json_decode((string) $response->getBody(), TRUE)['model']['22222222-2222-4222-8221-222222222222']['resolved']['text'];
+    };
+    self::assertSame('Preview node', $get_resolved_title_in_api_response("/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
+    self::assertSame('Nœud de prévisualisation', $get_resolved_title_in_api_response("/fr/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
   }
 
   /**
