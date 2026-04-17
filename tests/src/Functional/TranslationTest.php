@@ -439,6 +439,52 @@ class TranslationTest extends FunctionalTestBase {
   }
 
   /**
+   * Tests that the layout API returns translated content from language-prefixed routes when canvas_dev_translation is enabled.
+   */
+  public function testCanvasDevTranslationLayoutApi(): void {
+    $module_installer = $this->container->get(ModuleInstallerInterface::class);
+    $module_installer->install(['canvas_dev_translation']);
+    $this->rebuildContainer();
+
+    // Load the canvas_page created by canvas_dev_translation hook_install().
+    $pages = $this->container->get('entity_type.manager')
+      ->getStorage('canvas_page')
+      ->loadByProperties(['title' => 'Canvas Translation Test Page']);
+    $page = reset($pages);
+    $this->assertNotFalse($page);
+    $page_id = $page->id();
+
+    $get_name_in_api_response = function (string $root_relative_url): ?string {
+      $response = $this->makeApiRequest('GET', Url::fromUri("base:$root_relative_url"), []);
+      self::assertSame(200, $response->getStatusCode());
+      $layout = json_decode((string) $response->getBody(), TRUE)['layout'];
+      return $layout[0]['components'][0]['name'];
+    };
+
+    // Assert the canvas_page layout API returns the correct translation per
+    // language prefix.
+    self::assertSame('English heading', $get_name_in_api_response("/canvas/api/v0/layout/canvas_page/$page_id"));
+    self::assertSame('French heading', $get_name_in_api_response("/fr/canvas/api/v0/layout/canvas_page/$page_id"));
+
+    // Create a minimal article node to use as the ContentTemplate preview
+    // entity.
+    $node = $this->container->get('entity_type.manager')
+      ->getStorage('node')
+      ->create([
+        'type' => 'article',
+        'title' => 'Preview node',
+        'status' => 1,
+      ]);
+    $node->save();
+    $node_id = $node->id();
+
+    // Assert the ContentTemplate layout API returns the correct translation per
+    // language prefix.
+    self::assertSame('English template heading', $get_name_in_api_response("/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
+    self::assertSame('French template heading', $get_name_in_api_response("/fr/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
+  }
+
+  /**
    * Data provider for testTranslation().
    *
    * @return array<array{0: array, 1: bool}>
