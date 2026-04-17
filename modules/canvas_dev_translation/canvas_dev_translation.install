@@ -18,6 +18,14 @@ use Drupal\language\Entity\ConfigurableLanguage;
  * so that the language-prefixed layout API routes can be tested manually or
  * in automated tests without requiring a translation UI.
  *
+ * IMPORTANT: BEFORE installing this module for manual testing.
+ * 1. drush en content_translation.
+ * 2. Add the French language at admin/config/regional/language.
+ * 3. Enable translations for pages at admin/config/regional/content-language.
+ *    Check "Page" and then save the form.
+ * 4. drush en canvas_dev_translation.
+ *
+ *
  * @see \Drupal\Tests\canvas\Functional\TranslationTest::testCanvasDevTranslationLayoutApi()
  */
 function canvas_dev_translation_install(): void {
