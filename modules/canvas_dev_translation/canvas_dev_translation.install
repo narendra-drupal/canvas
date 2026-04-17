@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Drupal\canvas\Entity\ContentTemplate;
 use Drupal\canvas\Entity\Page;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
+use Drupal\canvas\PropSource\PropSource;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\language\ConfigurableLanguageManagerInterface;
 use Drupal\language\Entity\ConfigurableLanguage;
@@ -91,6 +92,19 @@ function canvas_dev_translation_install(): void {
         'component_version' => $version,
         'inputs' => [
           'text' => 'Hello from template',
+          'element' => 'h2',
+        ],
+        'label' => 'English template heading',
+      ],
+      [
+        'uuid' => '22222222-2222-4222-8221-222222222222',
+        'component_id' => 'sdc.canvas_test_sdc.heading',
+        'component_version' => $version,
+        'inputs' => [
+          'text' => [
+            'sourceType' => PropSource::EntityField->value,
+            'expression' => 'ℹ︎␜entity:node:article␝title␞␟value',
+          ],
           'element' => 'h2',
         ],
         'label' => 'English template heading',
