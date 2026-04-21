@@ -7,6 +7,7 @@ import { Box, Button, Flex, Grid, Tooltip } from '@radix-ui/themes';
 
 import { useAppSelector } from '@/app/hooks';
 import AIToggleButton from '@/components/aiExtension/AiToggleButton';
+import LanguageSelector from '@/components/languageSelector/LanguageSelector';
 import PreviewControls from '@/components/PreviewControls';
 import UnpublishedChanges from '@/components/review/UnpublishedChanges';
 import ContentPreviewSelector from '@/components/templates/ContentPreviewSelector';
@@ -159,6 +160,7 @@ const Topbar = () => {
             width={leftRightColumnWidth}
           >
             <NotificationBell />
+            <LanguageSelector />
             <PreviewControls isPreview={isPreview} />
             <UnpublishedChanges />
           </Flex>
