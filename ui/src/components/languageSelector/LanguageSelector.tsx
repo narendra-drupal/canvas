@@ -1,12 +1,19 @@
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronDownIcon, GlobeIcon } from '@radix-ui/react-icons';
 import { Button, DropdownMenu, Flex, Text } from '@radix-ui/themes';
 
+import { useAppDispatch } from '@/app/hooks';
+import { setConfiguration } from '@/features/configuration/configurationSlice';
+import { componentAndLayoutApi } from '@/services/componentAndLayout';
 import { useGetLanguagesQuery } from '@/services/languages';
 
 const LanguageSelector = () => {
   const { data: languages = [], isLoading } = useGetLanguagesQuery();
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
+  const navigate = useNavigate();
+  const { entityType, entityId } = useParams();
+  const dispatch = useAppDispatch();
 
   // Find the default language when data is loaded.
   const defaultLanguage = languages.find((lang) => lang.isDefault);
@@ -15,7 +22,41 @@ const LanguageSelector = () => {
 
   const handleLanguageChange = (languageId: string) => {
     setSelectedLanguage(languageId);
-    // Implement actual language switching logic.
+    const selectedLang = languages.find((lang) => lang.id === languageId);
+
+    if (!selectedLang || !entityType || !entityId) {
+      return;
+    }
+
+    // If selecting the default language, navigate back to editor.
+    if (selectedLang.isDefault) {
+      dispatch(
+        setConfiguration({
+          baseUrl: '/',
+          entityType,
+          entity: entityId,
+          isNew: false,
+          isPublished: false,
+          devMode: false,
+        }),
+      );
+      // Invalidate cache to force refetch with default language.
+      dispatch(
+        componentAndLayoutApi.util.invalidateTags([
+          { type: 'Layout', id: `${entityType}-${entityId}` },
+        ]),
+      );
+      navigate(`/editor/${entityType}/${entityId}`);
+    } else {
+      // For non-default languages, navigate to preview with the language URL in state.
+      const internalPath = `/node/${entityId}`;
+      const languageUrl = `${window.location.origin}/${languageId}${internalPath}`;
+
+      // Navigate to preview and pass the language URL in state.
+      navigate(`/preview/${entityType}/${entityId}/full`, {
+        state: { languagePreviewUrl: languageUrl, language: languageId },
+      });
+    }
   };
 
   const currentLangObj = languages.find((lang) => lang.id === currentLanguage);

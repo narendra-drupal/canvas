@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import { AlertDialog, Button, Flex } from '@radix-ui/themes';
 
 import { useAppSelector } from '@/app/hooks';
@@ -11,7 +11,10 @@ import {
 } from '@/features/layout/layoutModelSlice';
 import { selectPageData } from '@/features/pageData/pageDataSlice';
 import { selectPreviewHtml } from '@/features/pagePreview/previewSlice';
-import { usePostPreviewMutation } from '@/services/preview';
+import {
+  useGetLanguagePreviewMutation,
+  usePostPreviewMutation,
+} from '@/services/preview';
 import { getViewportSizes } from '@/utils/viewports';
 
 import styles from './PagePreview.module.css';
@@ -23,7 +26,9 @@ const PagePreview = () => {
   const entity_form_fields = useAppSelector(selectPageData);
   const frameSrcDoc = useAppSelector(selectPreviewHtml);
   const [postPreview] = usePostPreviewMutation();
+  const [getLanguagePreview] = useGetLanguagePreviewMutation();
   const { entityId, entityType } = useParams();
+  const location = useLocation();
   const { showBoundary } = useErrorBoundary();
   const [widthVal, setWidthVal] = useState('100%');
   const { width } = useParams();
@@ -32,35 +37,57 @@ const PagePreview = () => {
   // Get viewport sizes (supports theme-level customization).
   const viewportSizes = useMemo(() => getViewportSizes(), []);
 
+  // Check if this is a language preview.
+  const locationState = location.state as {
+    languagePreviewUrl?: string;
+    language?: string;
+  } | null;
+  const languagePreviewUrl = locationState?.languagePreviewUrl;
+  const isLanguagePreview = !!languagePreviewUrl;
+
   useEffect(() => {
     const sendPreviewRequest = async () => {
       if (!entityType || !entityId) {
         return;
       }
       try {
-        await postPreview({
-          layout,
-          model,
-          entity_form_fields,
-          entityId,
-          entityType,
-        }).unwrap();
+        if (isLanguagePreview && locationState?.language) {
+          // For language preview, use GET to fetch the published content.
+          await getLanguagePreview({
+            entityType,
+            entityId,
+            languageCode: locationState.language,
+          }).unwrap();
+        } else {
+          // For normal preview, use POST with current edits.
+          await postPreview({
+            layout,
+            model,
+            entity_form_fields,
+            entityId,
+            entityType,
+          }).unwrap();
+        }
       } catch (err) {
         showBoundary(err);
       }
     };
-    if (updatePreview) {
+    // Trigger preview on mount for language preview, or when updatePreview is true for normal preview.
+    if (isLanguagePreview || updatePreview) {
       sendPreviewRequest().then(() => {});
     }
   }, [
     layout,
     model,
     postPreview,
+    getLanguagePreview,
     entity_form_fields,
     entityId,
     entityType,
     updatePreview,
     showBoundary,
+    isLanguagePreview,
+    locationState,
   ]);
 
   useEffect(() => {

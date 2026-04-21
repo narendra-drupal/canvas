@@ -188,6 +188,7 @@ export const withAutoSavesInjection: (
           'createContentTemplate',
           'updateFolder',
           'uploadFont',
+          'getLanguagePreview',
         ].includes(api.endpoint)
       ) {
         const state = api.getState() as RootState;

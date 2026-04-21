@@ -88,6 +88,27 @@ export const previewApi = createApi({
         }
       },
     }),
+    getLanguagePreview: builder.mutation<
+      { html: string; layout: any; model: any },
+      {
+        entityType: string;
+        entityId: string;
+        languageCode: string;
+      }
+    >({
+      query: ({ entityType, entityId, languageCode }) => ({
+        url: `${languageCode}/canvas/api/v0/layout/${entityType}/${entityId}`,
+        method: 'GET',
+      }),
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        const { data } = await queryFulfilled;
+        const { html, layout, model } = data;
+        // Update our preview slice with the language-specific HTML.
+        dispatch(setHtml(html));
+        // Also update the layout model so everything stays in sync.
+        dispatch(setLayoutModel({ layout, model, updatePreview: false }));
+      },
+    }),
     updateComponent: builder.mutation<
       UpdateComponentResultType,
       UpdateComponentQueryArg
@@ -139,8 +160,11 @@ export const previewApi = createApi({
   }),
 });
 
-export const { usePostPreviewMutation, useUpdateComponentMutation } =
-  previewApi;
+export const {
+  usePostPreviewMutation,
+  useGetLanguagePreviewMutation,
+  useUpdateComponentMutation,
+} = previewApi;
 
 let lastBody = {};
 /**
