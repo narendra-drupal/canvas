@@ -223,13 +223,12 @@ canvas.js_component.*:
             label: 'Canvas Drupal settings needed by the component'
             constraints:
               Choice:
-                - v0.baseUrl
                 - v0.branding
                 - v0.breadcrumbs
-                - v0.jsonapiSettings
                 - v0.mainEntity
                 - v0.pageTitle
-                - v0.themeAssets
+                - v0.jsonapiSettings
+                - v0.baseUrl
 
 canvas.page_region.*:
   type: config_entity
@@ -310,6 +309,8 @@ canvas.component_tree:
   sequence:
     # @todo Ensure the component instances appear in a predictable order in the exported YAML in https://www.drupal.org/i/3526127
     type: canvas.component_tree_node
+  # Ensure a decent config translation UX: only 'inputs' is translatable, so simplify the form.
+  form_element_class: '\Drupal\canvas\ConfigTranslation\CanvasComponentTreeItemListFormElement'
 
 # The config equivalent of a ComponentTreeItem, validated by the same constraint.
 canvas.component_tree_node:
@@ -361,7 +362,8 @@ canvas.component_tree_node:
       constraints: { }
     # @see \Drupal\canvas\Plugin\DataType\ComponentInputs
     inputs:
-      type: ignore
+      type: mapping
+      class: '\Drupal\canvas\Config\Schema\ComponentSpecificInputs'
       label: 'Input values for each component in the component tree'
     label:
       # This is entirely optional; provides more context for content authors.
