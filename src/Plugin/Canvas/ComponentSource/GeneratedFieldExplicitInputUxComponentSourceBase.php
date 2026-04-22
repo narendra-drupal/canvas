@@ -196,7 +196,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
    * @return \Drupal\canvas\PropSource\StaticPropSource
    *   The prop source object.
    */
-  private function getDefaultStaticPropSource(string $prop_name, bool $validate_prop_name): StaticPropSource {
+  public function getDefaultStaticPropSource(string $prop_name, bool $validate_prop_name): StaticPropSource {
     if ($validate_prop_name && !\array_key_exists($prop_name, $this->getMetadata()->schema['properties'] ?? [])) {
       throw new \OutOfRangeException(\sprintf("'%s' is not a prop on the code powering the component '%s'.", $prop_name, $this->getComponentDescription()));
     }
@@ -256,7 +256,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
   /**
    * {@inheritdoc}
    */
-  protected function getExplicitInputDefinitions(): array {
+  public function getExplicitInputDefinitions(): array {
     // Use the referenced Component version to determine required props.
     $required = \array_keys(\array_filter($this->configuration['prop_field_definitions'], static fn (array $definition) => $definition['required'] ?? FALSE));
     $prop_shapes = self::getComponentInputsForMetadata($this->getSourceSpecificComponentId(), $this->getMetadata());

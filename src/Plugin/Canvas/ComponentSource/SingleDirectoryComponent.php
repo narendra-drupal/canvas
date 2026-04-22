@@ -30,6 +30,7 @@ use Symfony\Component\Filesystem\Path;
   updater: GeneratedFieldExplicitInputUxComponentInstanceUpdater::class,
   // @see \Drupal\Core\Theme\ComponentPluginManager::__construct()
   discoveryCacheTags: ['component_plugins'],
+  inputs_config_schema_generator: GeneratedFieldExplicitInputUxComponentInstanceInputsConfigSchemaGenerator::class,
 )]
 final class SingleDirectoryComponent extends GeneratedFieldExplicitInputUxComponentSourceBase implements UrlRewriteInterface {
 
