@@ -5,6 +5,12 @@ import { Button, DropdownMenu, Flex, Text } from '@radix-ui/themes';
 
 import { useAppDispatch } from '@/app/hooks';
 import { setConfiguration } from '@/features/configuration/configurationSlice';
+import {
+  initialState as layoutInitialState,
+  setInitialLayoutModel,
+} from '@/features/layout/layoutModelSlice';
+import { setInitialPageData } from '@/features/pageData/pageDataSlice';
+import { setHtml } from '@/features/pagePreview/previewSlice';
 import { componentAndLayoutApi } from '@/services/componentAndLayout';
 import { useGetLanguagesQuery } from '@/services/languages';
 
@@ -30,6 +36,19 @@ const LanguageSelector = () => {
 
     // If selecting the default language, navigate back to editor.
     if (selectedLang.isDefault) {
+      // Clear the preview HTML to prevent showing stale language content.
+      dispatch(setHtml(''));
+
+      // Reset layout model and page data to clear any language-specific content
+      dispatch(
+        setInitialLayoutModel({
+          layout: layoutInitialState.layout,
+          model: layoutInitialState.model,
+          updatePreview: false,
+        }),
+      );
+      dispatch(setInitialPageData({}));
+
       dispatch(
         setConfiguration({
           baseUrl: '/',
@@ -40,21 +59,34 @@ const LanguageSelector = () => {
           devMode: false,
         }),
       );
-      // Invalidate cache to force refetch with default language.
-      dispatch(
-        componentAndLayoutApi.util.invalidateTags([
-          { type: 'Layout', id: `${entityType}-${entityId}` },
-        ]),
-      );
-      navigate(`/editor/${entityType}/${entityId}`);
-    } else {
-      // For non-default languages, navigate to preview with the language URL in state.
-      const internalPath = `/node/${entityId}`;
-      const languageUrl = `${window.location.origin}/${languageId}${internalPath}`;
 
-      // Navigate to preview and pass the language URL in state.
+      // Use setTimeout to ensure baseUrl is propagated before invalidation and navigation.
+      setTimeout(() => {
+        // Invalidate cache to force refetch with default language.
+        dispatch(
+          componentAndLayoutApi.util.invalidateTags([{ type: 'Layout' }]),
+        );
+        navigate(`/editor/${entityType}/${entityId}`);
+      }, 0);
+    } else {
+      // For non-default languages, set the baseUrl with language prefix first.
+      dispatch(
+        setConfiguration({
+          baseUrl: `/${languageId}/`,
+          entityType,
+          entity: entityId,
+          isNew: false,
+          isPublished: false,
+          devMode: false,
+        }),
+      );
+
+      // Clear any existing cache for fresh language fetch.
+      dispatch(componentAndLayoutApi.util.invalidateTags([{ type: 'Layout' }]));
+
+      // Navigate to preview with the language info in state
       navigate(`/preview/${entityType}/${entityId}/full`, {
-        state: { languagePreviewUrl: languageUrl, language: languageId },
+        state: { isLanguagePreview: true, language: languageId },
       });
     }
   };

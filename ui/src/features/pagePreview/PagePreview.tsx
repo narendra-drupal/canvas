@@ -39,11 +39,10 @@ const PagePreview = () => {
 
   // Check if this is a language preview.
   const locationState = location.state as {
-    languagePreviewUrl?: string;
+    isLanguagePreview?: boolean;
     language?: string;
   } | null;
-  const languagePreviewUrl = locationState?.languagePreviewUrl;
-  const isLanguagePreview = !!languagePreviewUrl;
+  const isLanguagePreview = locationState?.isLanguagePreview || false;
 
   useEffect(() => {
     const sendPreviewRequest = async () => {

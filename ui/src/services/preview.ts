@@ -96,8 +96,8 @@ export const previewApi = createApi({
         languageCode: string;
       }
     >({
-      query: ({ entityType, entityId, languageCode }) => ({
-        url: `${languageCode}/canvas/api/v0/layout/${entityType}/${entityId}`,
+      query: ({ entityType, entityId }) => ({
+        url: `canvas/api/v0/layout/${entityType}/${entityId}`,
         method: 'GET',
       }),
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
