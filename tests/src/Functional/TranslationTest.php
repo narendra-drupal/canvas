@@ -168,26 +168,12 @@ class TranslationTest extends FunctionalTestBase {
    */
   #[DataProvider('translationDataProvider')]
   public function testTranslation(array $translatable_properties, bool $expect_component_removed_on_translation): void {
-    $page = $this->getSession()->getPage();
     $assert_session = $this->assertSession();
 
     $field_is_translatable = !empty($translatable_properties);
 
-    $this->drupalGet('admin/config/regional/content-language');
-    if ($field_is_translatable) {
-      $page->checkField('settings[node][article][fields][field_canvas_test]');
-      foreach (['tree', 'inputs'] as $field_property) {
-        \in_array($field_property, $translatable_properties, TRUE)
-          ? $page->checkField("settings[node][article][columns][field_canvas_test][$field_property]")
-          : $page->uncheckField("settings[node][article][columns][field_canvas_test][$field_property]");
-      }
-    }
-    else {
-      $page->uncheckField('settings[node][article][fields][field_canvas_test]');
-    }
+    $this->setFieldTranslatble($translatable_properties);
 
-    $page->pressButton('Save configuration');
-    $this->assertSession()->pageTextContains('Settings successfully updated.');
     $original_node = $this->createCanvasNodeWithTranslation(\in_array('inputs', $translatable_properties, TRUE));
     $this->assertTrue($original_node->isDefaultTranslation());
     $translated_node = $original_node->getTranslation('fr');
@@ -253,6 +239,16 @@ class TranslationTest extends FunctionalTestBase {
     self::assertSame("Drupal, c'est magnifique !", $get_name_in_api_response('/fr/canvas/api/v0/layout/node/1'));
   }
 
+  public function testInvalidTranslationProps(): void {
+    $translatable_properties = ['inputs'];
+    $this->setFieldTranslatble($translatable_properties);
+
+    $original_node = $this->createCanvasNodeWithTranslation(\in_array('inputs', $translatable_properties, TRUE));
+    $this->assertTrue($original_node->isDefaultTranslation());
+    $translated_node = $original_node->getTranslation('fr');
+    $this->assertSame('The French title', (string) $translated_node->getTitle());
+  }
+
   /**
    * Creates an article node with a translation.
    *
@@ -316,6 +312,25 @@ class TranslationTest extends FunctionalTestBase {
     $list->removeItem($delta_to_remove);
     $node->save();
     return $node;
+  }
+
+  private function setFieldTranslatble(array $translatable_properties): void {
+    $page = $this->getSession()->getPage();
+    $field_is_translatable = !empty($translatable_properties);
+    $this->drupalGet('admin/config/regional/content-language');
+    if ($field_is_translatable) {
+      $page->checkField('settings[node][article][fields][field_canvas_test]');
+      foreach (['tree', 'inputs'] as $field_property) {
+        \in_array($field_property, $translatable_properties, TRUE)
+          ? $page->checkField("settings[node][article][columns][field_canvas_test][$field_property]")
+          : $page->uncheckField("settings[node][article][columns][field_canvas_test][$field_property]");
+      }
+    }
+    else {
+      $page->uncheckField('settings[node][article][fields][field_canvas_test]');
+    }
+    $page->pressButton('Save configuration');
+    $this->assertSession()->pageTextContains('Settings successfully updated.');
   }
 
 }
