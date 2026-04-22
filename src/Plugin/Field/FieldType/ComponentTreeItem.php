@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Drupal\canvas\Plugin\Field\FieldType;
 
 use Drupal\canvas\Entity\ComponentTreeEntityInterface;
+use Drupal\canvas\Plugin\DataType\ComponentInputs;
 use Drupal\canvas\PropSource\PropSource;
 use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Block\MessagesBlockPluginInterface;
 use Drupal\Core\Block\TitleBlockPluginInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 use Drupal\Core\Field\Attribute\FieldType;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -624,6 +626,21 @@ class ComponentTreeItem extends FieldItemBase {
     if ($input_values === NULL && $source->requiresExplicitInput()) {
       throw new \LogicException(\sprintf('Missing input for component instance with UUID %s', $component_instance_uuid));
     }
+
+    // For non-default translations, strip non-translatable input keys so that
+    // only translatable values are stored per-language. Non-translatable values
+    // are merged from the default translation at read time.
+    // @see \Drupal\canvas\ComponentSource\ComponentSourceBase::getExplicitInput()
+    // @see \Drupal\canvas\ComponentSource\ComponentSourceBase::validateComponentInput()
+    // @see https://www.drupal.org/project/canvas/issues/3583684
+    if ($entity instanceof TranslatableInterface && !$entity->isDefaultTranslation() && $input_values !== NULL) {
+      $inputs_typed_data = $this->get('inputs');
+      \assert($inputs_typed_data instanceof ComponentInputs);
+      $translatable_keys = $inputs_typed_data->getTranslatableInputKeys();
+      $filtered_inputs = \array_intersect_key($input_values, \array_flip($translatable_keys));
+      $this->setInput($filtered_inputs);
+    }
+
     $this->optimizeInputs();
     // @todo Omit defaults that are stored at the content type template level, e.g. in core.entity_view_display.node.article.default.yml
     // $template_tree = '@todo';

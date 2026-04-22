@@ -11,6 +11,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Extension\ModuleInstallerInterface;
 use Drupal\Core\Url;
+use Drupal\canvas\Plugin\DataType\ComponentInputs;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
 use Drupal\node\Entity\Node;
@@ -239,14 +240,128 @@ class TranslationTest extends FunctionalTestBase {
     self::assertSame("Drupal, c'est magnifique !", $get_name_in_api_response('/fr/canvas/api/v0/layout/node/1'));
   }
 
+  /**
+   * Tests that preSave() automatically strips non-translatable input keys.
+   *
+   * When saving a non-default translation, ComponentTreeItem::preSave() should
+   * use getTranslatableInputKeys() to strip non-translatable keys from inputs.
+   * Non-translatable values are then merged from the default translation at
+   * read time by ComponentSourceBase::getExplicitInput().
+   *
+   * Uses the 'my-cta' SDC which has:
+   * - text: type: string (translatable)
+   * - href: type: string, format: uri (translatable)
+   * - target: type: string, enum: [_self, _blank] (NOT translatable — enums)
+   *
+   * @see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem::preSave()
+   * @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys()
+   * @see \Drupal\canvas\ComponentSource\ComponentSourceBase::getExplicitInput()
+   * @see https://www.drupal.org/project/canvas/issues/3583684
+   */
   public function testInvalidTranslationProps(): void {
-    $translatable_properties = ['inputs'];
-    $this->setFieldTranslatble($translatable_properties);
+    $this->setFieldTranslatble(['inputs']);
 
-    $original_node = $this->createCanvasNodeWithTranslation(\in_array('inputs', $translatable_properties, TRUE));
-    $this->assertTrue($original_node->isDefaultTranslation());
-    $translated_node = $original_node->getTranslation('fr');
-    $this->assertSame('The French title', (string) $translated_node->getTitle());
+    $cta_uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+    $component = \Drupal\canvas\Entity\Component::load('sdc.canvas_test_sdc.my-cta');
+    self::assertNotNull($component);
+    $version = $component->getActiveVersion();
+
+    $node = Node::create([
+      'type' => 'article',
+      'title' => 'Test node',
+      'field_canvas_test' => [
+        [
+          'uuid' => $cta_uuid,
+          'component_id' => 'sdc.canvas_test_sdc.my-cta',
+          'component_version' => $version,
+          'inputs' => [
+            'text' => 'Click here',
+            'href' => 'https://drupal.org',
+            'target' => '_self',
+          ],
+        ],
+      ],
+    ]);
+    $node->save();
+
+    // Reload so addTranslation() can properly synchronize field values.
+    $node = Node::load($node->id());
+    self::assertNotNull($node);
+
+    // Verify which keys are translatable per the config schema.
+    $list = $node->get('field_canvas_test');
+    \assert($list instanceof ComponentTreeItemList);
+    $cta = $list->getComponentTreeItemByUuid($cta_uuid);
+    \assert($cta instanceof ComponentTreeItem);
+    $inputs_typed_data = $cta->get('inputs');
+    \assert($inputs_typed_data instanceof ComponentInputs);
+    $translatable_keys = $inputs_typed_data->getTranslatableInputKeys();
+    self::assertContains('text', $translatable_keys);
+    self::assertNotContains('target', $translatable_keys, 'enum prop should not be translatable');
+
+    // Create a French translation. Explicitly set the component tree with
+    // ALL inputs including the non-translatable 'target' — preSave() should
+    // strip it automatically.
+    $translation = $node->addTranslation('fr');
+    $this->container->get('content_translation.manager')
+      ->getTranslationMetadata($translation)
+      ->setSource($node->language()->getId());
+    // @phpstan-ignore-next-line
+    $translation->title = 'French title';
+    $translation->set('field_canvas_test', [
+      [
+        'uuid' => $cta_uuid,
+        'component_id' => 'sdc.canvas_test_sdc.my-cta',
+        'component_version' => $version,
+        'inputs' => [
+          'text' => 'Cliquez ici',
+          'href' => 'https://drupal.fr',
+          'target' => '_self',
+        ],
+      ],
+    ]);
+    $translation->save();
+
+    // Reload and verify non-translatable 'target' was stripped.
+    $node = Node::load($node->id());
+    self::assertNotNull($node);
+    $fr_node = $node->getTranslation('fr');
+    $fr_list = $fr_node->get('field_canvas_test');
+    \assert($fr_list instanceof ComponentTreeItemList);
+    $fr_cta = $fr_list->getComponentTreeItemByUuid($cta_uuid);
+    \assert($fr_cta instanceof ComponentTreeItem);
+    $fr_stored_inputs = $fr_cta->getInputs();
+    self::assertArrayHasKey('text', $fr_stored_inputs);
+    self::assertSame('Cliquez ici', $fr_stored_inputs['text']);
+    self::assertArrayNotHasKey('target', $fr_stored_inputs, 'Non-translatable target should have been stripped on save');
+
+    // Now update the non-translatable 'target' on the default translation.
+    $en_node = $node->getTranslation('en');
+    $en_list = $en_node->get('field_canvas_test');
+    \assert($en_list instanceof ComponentTreeItemList);
+    $en_cta = $en_list->getComponentTreeItemByUuid($cta_uuid);
+    \assert($en_cta instanceof ComponentTreeItem);
+    $en_cta->setInput([
+      'text' => 'Click here',
+      'href' => 'https://drupal.org',
+      'target' => '_blank',
+    ]);
+    $en_node->save();
+
+    // Verify the French translation's merge-on-read picks up the updated
+    // non-translatable 'target' from the default translation.
+    $node = Node::load($node->id());
+    self::assertNotNull($node);
+    $fr_node = $node->getTranslation('fr');
+    $fr_list = $fr_node->get('field_canvas_test');
+    \assert($fr_list instanceof ComponentTreeItemList);
+    $fr_cta = $fr_list->getComponentTreeItemByUuid($cta_uuid);
+    \assert($fr_cta instanceof ComponentTreeItem);
+    $component_source = $fr_cta->getComponent()?->getComponentSource();
+    self::assertNotNull($component_source);
+    $resolved = $component_source->getResolvedExplicitInput($cta_uuid, $fr_cta, $fr_node);
+    self::assertSame('Cliquez ici', $resolved['text']->value, 'Translated text should be preserved');
+    self::assertSame('_blank', $resolved['target']->value, 'Updated non-translatable target should be merged from default');
   }
 
   /**
