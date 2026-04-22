@@ -8,6 +8,7 @@ use Drupal\canvas\JsonSchemaInterpreter\JsonSchemaStringFormat;
 use Drupal\canvas\PropExpressions\StructuredData\FieldObjectPropsExpression;
 use Drupal\canvas\Plugin\Field\FieldTypeOverride\ListStringItemOverride;
 use Drupal\canvas\PropExpressions\StructuredData\ReferencedBundleSpecificBranches;
+use Drupal\canvas\Tmgmt\ComponentTreeFieldProcessor;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -127,6 +128,14 @@ class ShapeMatchingHooks {
 
     // @todo Remove this forward port of https://www.drupal.org/project/drupal/issues/3521088 once Canvas requires Drupal >=11.3
     $info['changed']['constraints'] = $info['created']['constraints'] = $info['timestamp']['constraints'];
+
+    // Register a TMGMT field processor for component_tree fields so that each
+    // translatable prop appears as a separate string in the TMGMT review form.
+    // @see \Drupal\canvas\Tmgmt\ComponentTreeFieldProcessor
+    // @see https://www.drupal.org/project/canvas/issues/3583684
+    if (isset($info['component_tree']) && \Drupal::moduleHandler()->moduleExists('tmgmt_content')) {
+      $info['component_tree']['tmgmt_field_processor'] = ComponentTreeFieldProcessor::class;
+    }
   }
 
   /**
