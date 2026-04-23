@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Drupal\canvas\Tmgmt;
 
-use Drupal\canvas\Plugin\DataType\ComponentInputs;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
+use Drupal\canvas\PropSource\PropSource;
+use Drupal\canvas\PropSource\StaticPropSource;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\tmgmt_content\FieldProcessorInterface;
+use Drupal\tmgmt_content\LinkFieldProcessor;
 
 /**
  * TMGMT field processor for component_tree fields.
@@ -20,7 +21,7 @@ use Drupal\tmgmt_content\FieldProcessorInterface;
  * @see \Drupal\canvas\Plugin\DataType\ComponentInputs::resolveConfigSchemaMapping()
  * @see https://www.drupal.org/project/canvas/issues/3583684
  */
-final class ComponentTreeFieldProcessor implements FieldProcessorInterface {
+final class ComponentTreeFieldProcessor extends LinkFieldProcessor {
 
   /**
    * {@inheritdoc}
@@ -32,50 +33,53 @@ final class ComponentTreeFieldProcessor implements FieldProcessorInterface {
     foreach ($field as $delta => $item) {
       \assert($item instanceof ComponentTreeItem);
 
-      $inputs_typed_data = $item->get('inputs');
-      \assert($inputs_typed_data instanceof ComponentInputs);
-
-      try {
-        $actual_inputs = $item->getInputs() ?? [];
-      }
-      catch (\Exception) {
-        continue;
-      }
-
       $translatable_inputs = $item->get('inputs')->getTranslatableInputKeys();
       if (empty($translatable_inputs)) {
         continue;
       }
 
       $component = $item->getComponent();
-      $component_label = $component?->label() ?? $item->getComponentId();
+      if ($component === NULL) {
+        continue;
+      }
+      $component_label = $component->label() ?? $item->getComponentId();
       $has_delta_data = FALSE;
 
-      foreach ($translatable_inputs as $prop_name) {
+      $explicit_input = $component->getComponentSource()->getExplicitInput($item->getUuid(), $item);
 
-        $value = $actual_inputs[$prop_name];
-        $text = $this->extractTextValue($value);
-        if ($text === NULL) {
+      foreach ($translatable_inputs as $prop_name) {
+        if (!isset($explicit_input['source'][$prop_name])) {
           continue;
         }
+        $source_input = PropSource::parse($explicit_input['source'][$prop_name]);
+        if (!$source_input instanceof StaticPropSource) {
+          continue;
+        }
+
+        // Reuse TMGMT's extraction heuristics (shouldTranslateProperty()).
+        // LinkFieldProcessor marks URI properties as non-translatable, but
+        // Canvas treats static URIs as translatable.
+        $field_data = parent::extractTranslatableData($source_input->fieldItemList);
+        if (empty(Element::children($field_data))) {
+          continue;
+        }
+
+        // Restore URI translatability for StaticPropSource fields (no entity
+        // root means this is a static value, not a field on an entity).
+        foreach (Element::children($field_data) as $field_delta) {
+          if (isset($field_data[$field_delta]['uri'])) {
+            $field_data[$field_delta]['uri']['#translate'] = TRUE;
+          }
+        }
+
+        $field_data['#label'] = $prop_name;
 
         if (!$has_delta_data) {
           $data[$delta]['#label'] = $component_label . ' (' . \substr($item->getUuid(), 0, 8) . ')';
           $has_delta_data = TRUE;
         }
 
-        $prop_label = $prop_name;
-        $element = [
-          '#label' => $prop_label,
-          '#text' => $text,
-          '#translate' => TRUE,
-        ];
-
-        if (\is_array($value) && isset($value['format'])) {
-          $element['#format'] = $value['format'];
-        }
-
-        $data[$delta][$prop_name] = $element;
+        $data[$delta][$prop_name] = $field_data;
       }
     }
 
@@ -95,6 +99,13 @@ final class ComponentTreeFieldProcessor implements FieldProcessorInterface {
       $item = $field->offsetGet($delta);
       \assert($item instanceof ComponentTreeItem);
 
+      $component = $item->getComponent();
+      if ($component === NULL) {
+        continue;
+      }
+
+      $explicit_input = $component->getComponentSource()->getExplicitInput($item->getUuid(), $item);
+
       try {
         $inputs = $item->getInputs() ?? [];
       }
@@ -105,18 +116,17 @@ final class ComponentTreeFieldProcessor implements FieldProcessorInterface {
       $changed = FALSE;
       foreach (Element::children($item_data) as $prop_key) {
         $prop_data = $item_data[$prop_key];
-        if (empty($prop_data['#translate']) || !isset($prop_data['#translation']['#text'])) {
+
+        if (!isset($explicit_input['source'][$prop_key])) {
+          continue;
+        }
+        $source_input = PropSource::parse($explicit_input['source'][$prop_key]);
+        if (!$source_input instanceof StaticPropSource) {
           continue;
         }
 
-        $translated_text = $prop_data['#translation']['#text'];
-
-        if (\array_key_exists($prop_key, $inputs) && \is_array($inputs[$prop_key]) && isset($inputs[$prop_key]['value'])) {
-          $inputs[$prop_key]['value'] = $translated_text;
-        }
-        else {
-          $inputs[$prop_key] = $translated_text;
-        }
+        parent::setTranslations($prop_data, $source_input->fieldItemList);
+        $inputs[$prop_key] = $source_input->getValue();
         $changed = TRUE;
       }
 
@@ -124,27 +134,6 @@ final class ComponentTreeFieldProcessor implements FieldProcessorInterface {
         $item->setInput($inputs);
       }
     }
-  }
-
-  /**
-   * Extracts a plain text value from a component input.
-   *
-   * Handles collapsed StaticPropSource (plain string), text format arrays
-   * (['value' => ..., 'format' => ...]), and link arrays (['uri' => ...]).
-   */
-  private function extractTextValue(mixed $value): ?string {
-    if (\is_string($value)) {
-      return $value;
-    }
-    if (\is_array($value)) {
-      if (isset($value['value']) && \is_string($value['value'])) {
-        return $value['value'];
-      }
-      if (isset($value['uri']) && \is_string($value['uri'])) {
-        return $value['uri'];
-      }
-    }
-    return NULL;
   }
 
 }
