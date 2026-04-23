@@ -39,7 +39,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   inputs_config_schema_generator: GeneratedFieldExplicitInputUxComponentInstanceInputsConfigSchemaGenerator::class,
   // @see \Drupal\canvas\EntityHandlers\JavascriptComponentStorage::doPostSave()
   discoveryCacheTags: ['config:js_component_list'],
-  inputs_config_schema_generator: GeneratedFieldExplicitInputUxComponentInstanceInputsConfigSchemaGenerator::class,
 )]
 final class JsComponent extends GeneratedFieldExplicitInputUxComponentSourceBase implements UrlRewriteInterface {
 

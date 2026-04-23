@@ -70,7 +70,6 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
   // @see \Drupal\canvas\Block\BlockManagerDecorator
   // @todo Update after https://www.drupal.org/project/drupal/issues/3001284 lands
   discoveryCacheTags: [],
-  inputs_config_schema_generator: BlockComponentInstanceInputsConfigSchemaGenerator::class,
 )]
 final class BlockComponent extends ComponentSourceBase implements ContainerFactoryPluginInterface {
 
