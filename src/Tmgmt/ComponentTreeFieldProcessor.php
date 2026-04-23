@@ -42,13 +42,8 @@ final class ComponentTreeFieldProcessor implements FieldProcessorInterface {
         continue;
       }
 
-      $mapping = ComponentInputs::resolveConfigSchemaMapping(
-        $item->getComponentId(),
-        $item->getComponentVersion(),
-        $actual_inputs,
-      );
-
-      if (empty($mapping)) {
+      $translatable_inputs = $item->get('inputs')->getTranslatableInputKeys();
+      if (empty($translatable_inputs)) {
         continue;
       }
 
@@ -56,12 +51,7 @@ final class ComponentTreeFieldProcessor implements FieldProcessorInterface {
       $component_label = $component?->label() ?? $item->getComponentId();
       $has_delta_data = FALSE;
 
-      foreach ($mapping as $prop_name => $schema_def) {
-        // resolveConfigSchemaMapping() already calls refineForInstance() which
-        // strips 'translatable' from non-static-prop-source entries.
-        if (empty($schema_def['translatable']) || !\array_key_exists($prop_name, $actual_inputs)) {
-          continue;
-        }
+      foreach ($translatable_inputs as $prop_name) {
 
         $value = $actual_inputs[$prop_name];
         $text = $this->extractTextValue($value);
@@ -74,7 +64,7 @@ final class ComponentTreeFieldProcessor implements FieldProcessorInterface {
           $has_delta_data = TRUE;
         }
 
-        $prop_label = $schema_def['label'] ?? $prop_name;
+        $prop_label = $prop_name;
         $element = [
           '#label' => $prop_label,
           '#text' => $text,
