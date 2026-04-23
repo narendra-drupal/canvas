@@ -23,13 +23,17 @@ namespace Drupal\canvas\ComponentSource;
  *   schema can be generated: enumerating all props, and marking some as
  *   translatable (varying per instance depending on how they are populated).
  *
- * A fallback is provided too, which will use the public API methods on
+ * A fallback is provided too, which must use the public API methods on
  * ComponentSourceInterface to determine all existing explicit inputs and which
  * of those are required.
  *
  * @see \Drupal\canvas\Attribute\ComponentSource::__construct(inputs_config_schema_generator)
  * @see \Drupal\canvas\ComponentSource\ComponentSourceInterface
  * @see \Drupal\canvas\ComponentSource\FallbackComponentInstanceInputsConfigSchemaGenerator
+ *
+ * @phpstan-type ConfigSchemaTypeUntranslatable array{type: string, ...}
+ * @phpstan-type ConfigSchemaTypePossiblyTranslatable array{type: string, label?: string, translatable?: true, form_element_class?: string, ...}
+ * @phpstan-type ConfigSchemaTypeWithTranslatability ConfigSchemaTypeUntranslatable|ConfigSchemaTypePossiblyTranslatable
  */
 interface ComponentInstanceInputsConfigSchemaGeneratorInterface {
 
@@ -42,7 +46,8 @@ interface ComponentInstanceInputsConfigSchemaGeneratorInterface {
    * @param \Drupal\canvas\ComponentSource\ComponentSourceInterface $component_source
    *   The component source plugin instance for a particular Component version.
    *
-   * @return array<string, array{type: string, ...}>
+   * @return array<string, ConfigSchemaTypeWithTranslatability>
+   *   The generated config schema mapping definition.
    */
   public function getConfigSchemaMapping(ComponentSourceInterface $component_source): array;
 
@@ -61,8 +66,8 @@ interface ComponentInstanceInputsConfigSchemaGeneratorInterface {
    * @param string $component_version
    *   The component version.
    *
-   * @return array<string, mixed>
-   *   Refined mapping.
+   * @return array<string, ConfigSchemaTypeWithTranslatability>
+   *   The refined config schema mapping definition.
    */
   public function refineForInstance(array $mapping, array $actual_inputs, string $component_id, string $component_version): array;
 

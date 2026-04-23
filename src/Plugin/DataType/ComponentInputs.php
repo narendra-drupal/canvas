@@ -357,7 +357,7 @@ final class ComponentInputs extends TypedData implements ContentAwareDependentIn
 
     return \array_keys(\array_filter(
       $mapping,
-      static fn ($def, $key) => self::isTranslatableInputAccordingToConfigSchema($def, $actual_inputs[$key]),
+      static fn ($def, $key) => self::isTranslatableInputAccordingToConfigSchema($def, $actual_inputs[$key] ?? NULL),
       ARRAY_FILTER_USE_BOTH,
     ));
   }

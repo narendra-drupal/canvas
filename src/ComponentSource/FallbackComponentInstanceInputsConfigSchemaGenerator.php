@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\canvas\ComponentSource;
 
-use Drupal\canvas\PropSource\PropSource;
-
 /**
  * @internal
  *
@@ -16,8 +14,6 @@ final readonly class FallbackComponentInstanceInputsConfigSchemaGenerator implem
 
   /**
    * {@inheritdoc}
-   *
-   * @return array<string, array{type: string, label: string, translatable?: bool, form_element_class?: string}>
    */
   public function getConfigSchemaMapping(ComponentSourceInterface $component_source): array {
     $valid_inputs = \array_keys($component_source->getDefaultExplicitInput());
@@ -36,34 +32,19 @@ final readonly class FallbackComponentInstanceInputsConfigSchemaGenerator implem
       }
     }
 
-    // It is impossible for this fallback strategy to generate an appropriate
-    // `label` for each explicit input.
-    // @phpstan-ignore-next-line return.type
+    // Note: It is impossible for this fallback strategy to generate an
+    // appropriate `label` for each explicit input.
+    // @todo Set `label` for each explicit input in https://www.drupal.org/i/3586490
     return $mapping_definition;
   }
 
   /**
    * {@inheritdoc}
-   *
-   * @param array<string, mixed> $mapping
-   * @param array<string, mixed> $actual_inputs
-   *
-   * @return array<string, mixed>
    */
   public function refineForInstance(array $mapping, array $actual_inputs, string $component_id, string $component_version): array {
     // The Fallback generates only `type: ignore` with no `translatable` or
     // `form_element_class`, so no instance-level refinement is needed.
     return $mapping;
-  }
-
-  public static function isStaticPropSource(mixed $value): bool {
-    // Detect an optimized explicit input.
-    // @see \Drupal\canvas\Plugin\Canvas\ComponentSource\GeneratedFieldExplicitInputUxComponentSourceBase::optimizeExplicitInputs()
-    // @see \Drupal\canvas\Plugin\Canvas\ComponentSource\GeneratedFieldExplicitInputUxComponentSourceBase::collapse()
-    if (!\is_array($value) || !\array_key_exists('sourceType', $value)) {
-      return TRUE;
-    }
-    return PropSource::parse($value)->getSourceType() === PropSource::Static->value;
   }
 
 }
