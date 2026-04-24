@@ -57,28 +57,60 @@ final class ComponentTreeFieldProcessor extends LinkFieldProcessor {
         }
 
         // Reuse TMGMT's extraction heuristics (shouldTranslateProperty()).
-        // LinkFieldProcessor marks URI properties as non-translatable, but
-        // Canvas treats static URIs as translatable.
         $field_data = parent::extractTranslatableData($source_input->fieldItemList);
-        if (empty(Element::children($field_data))) {
+        $field_deltas = Element::children($field_data);
+        if (empty($field_deltas)) {
           continue;
         }
-
-        // Restore URI translatability for StaticPropSource fields (no entity
-        // root means this is a static value, not a field on an entity).
-        foreach (Element::children($field_data) as $field_delta) {
-          if (isset($field_data[$field_delta]['uri'])) {
-            $field_data[$field_delta]['uri']['#translate'] = TRUE;
-          }
-        }
-
-        $field_data['#label'] = $prop_name;
 
         if (!$has_delta_data) {
           $data[$delta]['#label'] = $component_label . ' (' . \substr($item->getUuid(), 0, 8) . ')';
           $has_delta_data = TRUE;
         }
 
+        // Collapse the nesting from parent::extractTranslatableData() so
+        // TMGMT's review form groups all props under one component header.
+        // The form calculates grouping by stripping the last key segment, so
+        // single-translatable-property props must have #text directly on the
+        // prop key.
+        if (\count($field_deltas) === 1) {
+          $delta_data = $field_data[\reset($field_deltas)];
+          $properties = Element::children($delta_data);
+          // Only count translatable properties: handleFormat() leaves a
+          // non-translatable `format` child alongside `value`.
+          $translatable = \array_filter(
+            $properties,
+            fn ($key) => !empty($delta_data[$key]['#translate']),
+          );
+
+          if (\count($translatable) === 1) {
+            // Single translatable property (e.g. string, text_long): promote
+            // #text directly onto the prop so flat key is "delta|prop_name".
+            $prop_entry = $delta_data[\reset($translatable)];
+            $prop_entry['#label'] = $prop_name;
+            $data[$delta][$prop_name] = $prop_entry;
+            continue;
+          }
+
+          // Multiple translatable properties (e.g. link with uri + title):
+          // collapse delta but keep properties as children.
+          $field_data = \array_filter($field_data, fn ($key) => \is_string($key) && \str_starts_with($key, '#'), \ARRAY_FILTER_USE_KEY) + $delta_data;
+        }
+
+        // Restore URI translatability: LinkFieldProcessor marks URIs as
+        // non-translatable, but Canvas treats static URIs as translatable.
+        if (isset($field_data['uri'])) {
+          $field_data['uri']['#translate'] = TRUE;
+        }
+        else {
+          foreach (Element::children($field_data) as $field_delta) {
+            if (isset($field_data[$field_delta]['uri'])) {
+              $field_data[$field_delta]['uri']['#translate'] = TRUE;
+            }
+          }
+        }
+
+        $field_data['#label'] = $prop_name;
         $data[$delta][$prop_name] = $field_data;
       }
     }
@@ -125,7 +157,23 @@ final class ComponentTreeFieldProcessor extends LinkFieldProcessor {
           continue;
         }
 
-        parent::setTranslations($prop_data, $source_input->fieldItemList);
+        // Re-wrap the collapsed structure to match what parent expects:
+        // [delta => [property => ['#translation' => ...]]].
+        $prop_children = Element::children($prop_data);
+        if (empty($prop_children) && isset($prop_data['#text'])) {
+          // Fully collapsed single-property: wrap in delta + property.
+          $main_property = $source_input->fieldItemList->getItemDefinition()->getMainPropertyName();
+          $wrapped = [0 => [$main_property => $prop_data]];
+        }
+        elseif (!empty($prop_children) && !\is_numeric(\reset($prop_children))) {
+          // Delta-collapsed multi-property: wrap in delta.
+          $wrapped = [0 => $prop_data];
+        }
+        else {
+          // Not collapsed (multi-cardinality): pass as-is.
+          $wrapped = $prop_data;
+        }
+        parent::setTranslations($wrapped, $source_input->fieldItemList);
         $inputs[$prop_key] = $source_input->getValue();
         $changed = TRUE;
       }
