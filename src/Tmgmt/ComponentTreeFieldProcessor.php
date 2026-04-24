@@ -88,7 +88,9 @@ final class ComponentTreeFieldProcessor extends LinkFieldProcessor {
           $properties = Element::children($fd_data);
           $translatable = \array_filter(
             $properties,
-            fn ($key) => !empty($fd_data[$key]['#translate']),
+            fn ($key) => !empty($fd_data[$key]['#translate'])
+              && isset($fd_data[$key]['#text'])
+              && $fd_data[$key]['#text'] !== '',
           );
           if (\count($translatable) === 1) {
             $prop_entry = $fd_data[\reset($translatable)];
