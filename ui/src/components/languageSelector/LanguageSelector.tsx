@@ -125,11 +125,6 @@ const LanguageSelector = () => {
             </Flex>
           </DropdownMenu.Item>
         ))}
-        {/* Optional: Add a divider and "Localization Setting" menu item */}
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item>
-          <Text>Localization Setting</Text>
-        </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
