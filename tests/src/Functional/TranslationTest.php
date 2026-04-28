@@ -19,7 +19,6 @@ use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Drupal\tmgmt\Entity\Job;
-use Drupal\tmgmt\Entity\JobItem;
 use Drupal\tmgmt\Entity\Translator;
 use Drupal\Tests\ApiRequestTrait;
 use Drupal\Tests\content_translation\Traits\ContentTranslationTestTrait;
@@ -483,10 +482,6 @@ class TranslationTest extends FunctionalTestBase {
     $job->setState(Job::STATE_ACTIVE);
     $translator->getPlugin()->requestJobItemsTranslation($job->getItems());
 
-    // Reload job item to get state set by requestJobItemsTranslation().
-    $job_item = JobItem::load($job_item->id());
-    self::assertNotNull($job_item);
-
     $this->drupalLogin($this->rootUser);
     $this->drupalGet('admin/tmgmt/items/' . $job_item->id());
     $assert = $this->assertSession();
@@ -496,10 +491,10 @@ class TranslationTest extends FunctionalTestBase {
     // TestTranslator prefixes translations: "fr: {original}".
     $assert->pageTextContains('fr: Click here');
 
-    // Accept translation programmatically: UI form submission can fail silently
-    // when canvas_page entity validation triggers during the HTTP sub-request.
-    $accepted = $job_item->acceptTranslation();
-    self::assertTrue($accepted, 'Translation acceptance must succeed.');
+    $this->submitForm([], 'Save as completed');
+    $assert->pageTextContains((string) t('The translation for @source has been accepted', [
+      '@source' => $canvas_page->label(),
+    ]));
 
     $canvas_page = Page::load($page_id);
     self::assertNotNull($canvas_page);
