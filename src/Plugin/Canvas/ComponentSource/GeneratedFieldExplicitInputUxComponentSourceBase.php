@@ -168,7 +168,10 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     \assert(\array_key_exists('prop_field_definitions', $this->configuration));
     \assert(\is_array($this->configuration['prop_field_definitions']));
     $dependencies = [];
-    foreach ($this->configuration['prop_field_definitions'] as $prop_name => ['field_type' => $field_type, 'field_widget' => $field_widget]) {
+    foreach ($this->configuration['prop_field_definitions'] as $prop_name => [
+      'field_type' => $field_type,
+      'field_widget' => $field_widget,
+    ]) {
       $field_widget_definition = $this->fieldWidgetPluginManager->getDefinition($field_widget);
       $dependencies['module'][] = $field_widget_definition['provider'];
       $prop_source = $this->getDefaultStaticPropSource($prop_name, FALSE);
@@ -1397,7 +1400,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
         // string input, as they're thinking about what string they do want.
         // ⚠️ This won't work for components whose logic specifically checks for
         // an empty string and refuses to render then.
-        if ($is_required_prop && $evaluated === '' && $this->getExplicitInputDefinitions()['shapes'][$prop] === ['type' => 'string']) {
+        if ($is_required_prop && $evaluated === '' && PropShape::isPlainOrRichProse($this->getExplicitInputDefinitions()['shapes'][$prop])) {
           // Confirm that *if* this weren't special-cased, that this would
           // indeed enter the next branch, which would cause it to be skipped.
           // @todo Consider adding a new `GracefulDegradationPropSource` to
