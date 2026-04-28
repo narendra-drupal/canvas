@@ -8,6 +8,8 @@ namespace Drupal\Tests\canvas\Functional;
 
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Drupal\canvas\Entity\Component;
+use Drupal\canvas\Entity\Page;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Extension\ModuleInstallerInterface;
 use Drupal\Core\Url;
@@ -16,6 +18,9 @@ use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
+use Drupal\tmgmt\Entity\Job;
+use Drupal\tmgmt\Entity\JobItem;
+use Drupal\tmgmt\Entity\Translator;
 use Drupal\Tests\ApiRequestTrait;
 use Drupal\Tests\content_translation\Traits\ContentTranslationTestTrait;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -262,7 +267,7 @@ class TranslationTest extends FunctionalTestBase {
     $this->setFieldTranslatble(['inputs']);
 
     $cta_uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
-    $component = \Drupal\canvas\Entity\Component::load('sdc.canvas_test_sdc.my-cta');
+    $component = Component::load('sdc.canvas_test_sdc.my-cta');
     self::assertNotNull($component);
     $version = $component->getActiveVersion();
 
@@ -427,6 +432,86 @@ class TranslationTest extends FunctionalTestBase {
     $list->removeItem($delta_to_remove);
     $node->save();
     return $node;
+  }
+
+  public function testTmgmtComponentTreeFieldProcessor(): void {
+    // Install TMGMT after other modules — rebuildContainer() triggers
+    // ShapeMatchingHooks::fieldInfoAlter() with tmgmt_content present,
+    // registering ComponentTreeFieldProcessor for component_tree fields.
+    $module_installer = $this->container->get(ModuleInstallerInterface::class);
+    $module_installer->install(['tmgmt', 'tmgmt_content', 'tmgmt_test']);
+    $this->rebuildContainer();
+
+    // Enable content translation for canvas_page so TMGMT content source
+    // can create French translations.
+    $this->enableContentTranslation('canvas_page', 'canvas_page');
+
+    $component_uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+    $component = Component::load('sdc.canvas_test_sdc.required-plain-string');
+    self::assertNotNull($component);
+    $canvas_page = Page::create([
+      'title' => 'TMGMT test page',
+      'components' => [[
+        'uuid' => $component_uuid,
+        'component_id' => 'sdc.canvas_test_sdc.required-plain-string',
+        'component_version' => $component->getActiveVersion(),
+        'inputs' => [
+          'title' => 'Click here',
+        ],
+      ],
+      ],
+    ]);
+    $canvas_page->save();
+    $page_id = $canvas_page->id();
+
+    // TestTranslator::getSupportedTargetLanguages() excludes 'fr', so bypass
+    // requestTranslation() and call requestJobItemsTranslation() directly.
+    $translator = Translator::create([
+      'name' => 'test_tmgmt',
+      'label' => 'Test TMGMT',
+      'plugin' => 'test_translator',
+      'remote_languages_mappings' => [],
+      'settings' => ['key' => 'test', 'another_key' => 'test'],
+    ]);
+    $translator->save();
+
+    $job = tmgmt_job_create('en', 'fr', $this->rootUser->id());
+    $job->translator = $translator->id();
+    $job->save();
+    $job_item = $job->addItem('content', 'canvas_page', $page_id);
+
+    $job->setState(Job::STATE_ACTIVE);
+    $translator->getPlugin()->requestJobItemsTranslation($job->getItems());
+
+    // Reload job item to get state set by requestJobItemsTranslation().
+    $job_item = JobItem::load($job_item->id());
+    self::assertNotNull($job_item);
+
+    $this->drupalLogin($this->rootUser);
+    $this->drupalGet('admin/tmgmt/items/' . $job_item->id());
+    $assert = $this->assertSession();
+    $assert->statusCodeEquals(200);
+    // extractTranslatableData() surfaces the 'text' prop value as source text.
+    $assert->pageTextContains('Click here');
+    // TestTranslator prefixes translations: "fr: {original}".
+    $assert->pageTextContains('fr: Click here');
+
+    // Accept translation programmatically: UI form submission can fail silently
+    // when canvas_page entity validation triggers during the HTTP sub-request.
+    $accepted = $job_item->acceptTranslation();
+    self::assertTrue($accepted, 'Translation acceptance must succeed.');
+
+    $canvas_page = Page::load($page_id);
+    self::assertNotNull($canvas_page);
+    $fr_page = $canvas_page->getTranslation('fr');
+    $fr_component = $fr_page->getComponentTree()->getComponentTreeItemByUuid($component_uuid);
+    self::assertNotNull($fr_component);
+    $fr_inputs = $fr_component->getInputs();
+    self::assertSame('fr: Click here', $fr_inputs['title']);
+
+    $this->drupalGet('/fr/page/' . $page_id);
+    $assert->statusCodeEquals(200);
+    $assert->pageTextContains('fr: Click here');
   }
 
   private function setFieldTranslatble(array $translatable_properties): void {
