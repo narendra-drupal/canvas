@@ -25,7 +25,6 @@ use Drupal\language\Entity\ConfigurableLanguage;
  *    Check "Page" and then save the form.
  * 4. drush en canvas_dev_translation.
  *
- *
  * @see \Drupal\Tests\canvas\Functional\TranslationTest::testCanvasDevTranslationLayoutApi()
  */
 function canvas_dev_translation_install(): void {
