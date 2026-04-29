@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// cspell:ignore magnifique Propulsé Bienvenue savoir Découvrez Identité visuelle prévisualisation
+// cspell:ignore magnifique Propulsé Bienvenue savoir Découvrez Identité visuelle prévisualisation Nœud
 
 namespace Drupal\Tests\canvas\Functional;
 

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+// cspell:ignore région
+
 use Drupal\canvas\Entity\ContentTemplate;
 use Drupal\canvas\Entity\Page;
 use Drupal\canvas\Entity\PageRegion;
