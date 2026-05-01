@@ -8,6 +8,7 @@ use Drupal\Component\Graph\Graph;
 use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\SortArray;
+use Drupal\content_translation\FieldTranslationSynchronizerInterface;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -600,6 +601,30 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
       }
     }
     return $this;
+  }
+
+  public function isTreeTranslationSynced(): bool {
+    return $this->isPropTranslationSynced('uuid');
+  }
+
+  public function isInputsTranslationSynced(): bool {
+    return $this->isPropTranslationSynced('inputs');
+  }
+
+  private function isPropTranslationSynced(string $prop): bool
+  {
+    if (!\Drupal::hasService(FieldTranslationSynchronizerInterface::class)) {
+      // If the service does not exist, we are not syncing tree.
+      return FALSE;
+    }
+    $syncer = \Drupal::service(FieldTranslationSynchronizerInterface::class);
+    $sync_props = $syncer->getFieldSynchronizedProperties($this->getFieldDefinition());
+    // If we are syncing uuid then we are syncing "tree", if the default
+    // translation does not have this item it means it was removed.
+    // @todo Real solution is probably already have removed the item in.
+    //    \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
+    //    somewhere before this?
+    return \in_array($prop, $sync_props, TRUE);
   }
 
 }

@@ -9,6 +9,7 @@ use Drupal\canvas\Plugin\DataType\ComponentInputs;
 use Drupal\canvas\PropSource\PropSource;
 use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\content_translation\FieldTranslationSynchronizerInterface;
 use Drupal\Core\Block\MessagesBlockPluginInterface;
 use Drupal\Core\Block\TitleBlockPluginInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -633,7 +634,9 @@ class ComponentTreeItem extends FieldItemBase {
     // @see \Drupal\canvas\ComponentSource\ComponentSourceBase::getExplicitInput()
     // @see \Drupal\canvas\ComponentSource\ComponentSourceBase::validateComponentInput()
     // @see https://www.drupal.org/project/canvas/issues/3583684
-    if ($entity instanceof TranslatableInterface && !$entity->isDefaultTranslation() && $input_values !== NULL) {
+    $parent_list = $this->getParent();
+    \assert($parent_list instanceof ComponentTreeItemList);
+    if ($parent_list->isTreeTranslationSynced() && !$parent_list->isInputsTranslationSynced() && $entity instanceof TranslatableInterface && !$entity->isDefaultTranslation() && $input_values !== NULL) {
       $inputs_typed_data = $this->get('inputs');
       \assert($inputs_typed_data instanceof ComponentInputs);
       $translatable_keys = $inputs_typed_data->getTranslatableInputKeys();

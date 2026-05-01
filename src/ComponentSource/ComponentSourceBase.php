@@ -262,14 +262,12 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
         }
       }
       else {
-        $syncer = \Drupal::service(FieldTranslationSynchronizerInterface::class);
-        $sync_props = $syncer->getFieldSynchronizedProperties($tree->getFieldDefinition());
-        // If we are syncing uuid then we are syncing "tree", if the default
+        // If we are syncing the "tree", the default
         // translation does not have this item it means it was removed.
         // @todo Real solution is probably already have removed the item in.
         //    \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
         //    somewhere before this?
-        if (\in_array('uuid', $sync_props, TRUE)) {
+        if ($tree->isTreeTranslationSynced()) {
           return new ConstraintViolationList();
         }
       }
