@@ -7,6 +7,8 @@ namespace Drupal\canvas\ComponentSource;
 use Drupal\canvas\Entity\Component;
 use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\content_translation\FieldTranslationSynchronizer;
+use Drupal\content_translation\FieldTranslationSynchronizerInterface;
 use Drupal\Core\Config\Schema\Mapping;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -15,6 +17,7 @@ use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 use Drupal\Core\Plugin\ContextAwarePluginTrait;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
+use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
@@ -249,12 +252,25 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
   public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
     $default_entity = $this->getDefaultTranslationEntity($entity);
     if ($default_entity !== NULL) {
-      $default_item = $this->componentTreeLoader->load($default_entity)->getComponentTreeItemByUuid($component_instance_uuid);
+      $tree = $this->componentTreeLoader->load($default_entity);
+      $default_item = $tree->getComponentTreeItemByUuid($component_instance_uuid);
       if ($default_item !== NULL) {
         foreach ($default_item->getInputs() ?? [] as $key => $value) {
           if (!\array_key_exists($key, $inputValues)) {
             $inputValues[$key] = $value;
           }
+        }
+      }
+      else {
+        $syncer = \Drupal::service(FieldTranslationSynchronizerInterface::class);
+        $sync_props = $syncer->getFieldSynchronizedProperties($tree->getFieldDefinition());
+        // If we are syncing uuid then we are syncing "tree", if the default
+        // translation does not have this item it means it was removed.
+        // @todo Real solution is probably already have removed the item in.
+        //    \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
+        //    somewhere before this?
+        if (\in_array('uuid', $sync_props, TRUE)) {
+          return new ConstraintViolationList();
         }
       }
     }

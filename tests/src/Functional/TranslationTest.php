@@ -745,6 +745,17 @@ class TranslationTest extends FunctionalTestBase {
     \assert($node instanceof Node);
     $list = $node->get('field_canvas_test');
     \assert($list instanceof ComponentTreeItemList);
+    // Remove the heading from the tree.
+    // In the asymmetric case, where 'tree' is translatable, this should only
+    // affect the untranslated node.
+    // In the symmetric case, where 'tree' is not translatable, this should
+    // change both the original and the translation.
+    $delta_to_remove = $list->getComponentTreeDeltaByUuid('e660e407-0901-4639-9726-9f99bc250c4c');
+    \assert(\is_int($delta_to_remove));
+    $list->removeItem($delta_to_remove);
+    $node->save();
+    $list = $node->get('field_canvas_test');
+    \assert($list instanceof ComponentTreeItemList);
     $updated_item = $list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
     \assert($updated_item instanceof ComponentTreeItem);
     $updated_item_inputs = $updated_item->getInputs();
@@ -754,14 +765,6 @@ class TranslationTest extends FunctionalTestBase {
     // not translatable, this should change both the original and the
     // translation.
     $updated_item->setInput($updated_item_inputs);
-    // Remove the heading from the tree.
-    // In the asymmetric case, where 'tree' is translatable, this should only
-    // affect the untranslated node.
-    // In the symmetric case, where 'tree' is not translatable, this should
-    // change both the original and the translation.
-    $delta_to_remove = $list->getComponentTreeDeltaByUuid('e660e407-0901-4639-9726-9f99bc250c4c');
-    \assert(\is_int($delta_to_remove));
-    $list->removeItem($delta_to_remove);
     $node->save();
     return $node;
   }
