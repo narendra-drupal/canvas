@@ -8,6 +8,7 @@ namespace Drupal\Tests\canvas\Functional;
 
 use Drupal\canvas\Entity\Component;
 use Drupal\canvas\Entity\ContentTemplate;
+use Drupal\canvas\Entity\Page;
 use Drupal\canvas\PropSource\PropSource;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\language\ConfigurableLanguageManagerInterface;
@@ -168,7 +169,7 @@ class TranslationTest extends FunctionalTestBase {
     self::assertNotNull($template);
     $template->setStatus(TRUE)->save();
 
-    $original_node = $this->createCanvasNodeWithTranslation();
+    $original_node = $this->createCanvasNodeWithTranslation(TRUE);
     $this->assertTrue($original_node->isDefaultTranslation());
     $translated_node = $original_node->getTranslation('fr');
     $this->assertSame('The French title', (string) $translated_node->getTitle());
@@ -690,12 +691,19 @@ class TranslationTest extends FunctionalTestBase {
    */
   protected function createCanvasNodeWithTranslation(bool $translatable_inputs): Node {
     $node = $this->createTestNode();
+
     $list = $node->get('field_canvas_test');
     \assert($list instanceof ComponentTreeItemList);
     // There are five items in the default values for this field.
     self::assertEquals(5, $list->count());
+    // debug
+    $list = $node->get('field_canvas_test');
+    \assert($list instanceof ComponentTreeItemList);
+    $orig_item = $list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
+    \assert($orig_item instanceof ComponentTreeItem);
+    $original_items = $orig_item->getInputs();
 
-    // Create a translation from the original English node.
+    // Create a translation from the original English node.$list = {Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList}
     $translation = $node->addTranslation('fr');
     $this->assertInstanceOf(Node::class, $translation);
     $this->container->get('content_translation.manager')->getTranslationMetadata($translation)->setSource($node->language()->getId());
@@ -703,20 +711,22 @@ class TranslationTest extends FunctionalTestBase {
     $translation->title = 'The French title';
     $translation->save();
     $translation = $node->getTranslation('fr');
-    $updated_item = $list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
-    \assert($updated_item instanceof ComponentTreeItem);
-    $updated_item_inputs = $updated_item->getInputs();
+    $french_list = $translation->get('field_canvas_test');
+    \assert($french_list instanceof ComponentTreeItemList);
+    $translated_item = $french_list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
+    \assert($translated_item instanceof ComponentTreeItem);
+
     // In both the Symmetric and Asymmetric translation cases, the `inputs` and
     // `label` field properties are translatable and this should only change the
     // translation.
-    $french_inputs = $updated_item_inputs;
+    $french_inputs = $translated_item->getInputs();
     $french_inputs['heading'] = 'bonjour, monde!';
     if ($translatable_inputs) {
       // The `cta1href` prop even though it is `type: string` also has
       // `format: uri-reference` so it should not be translatable in symmetric
-      // translations.
+      // translations. @todo cta1href should transtable
       unset($french_inputs['cta1href']);
-      // `attributes` should also not be translatable.
+      // `attributes` should also not be translatable. // @todo should already be unset. confirm with assert.
       unset($french_inputs['attributes']);
     }
 
@@ -729,6 +739,15 @@ class TranslationTest extends FunctionalTestBase {
     $translation->save();
 
     // Update the English version.
+    $node_storage = \Drupal::entityTypeManager()->getStorage('node');
+    $node_storage->resetCache([$node->id()]);
+    $node = $node_storage->load($node->id());
+    \assert($node instanceof Node);
+    $list = $node->get('field_canvas_test');
+    \assert($list instanceof ComponentTreeItemList);
+    $updated_item = $list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
+    \assert($updated_item instanceof ComponentTreeItem);
+    $updated_item_inputs = $updated_item->getInputs();
     $updated_item_inputs['heading'] = 'hello, new world!';
     // In both the Symmetric and Asymmetric cases, the `inputs` property is
     // translatable and this should only change the original. If the field is
