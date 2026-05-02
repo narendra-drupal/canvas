@@ -9,7 +9,6 @@ use Drupal\canvas\Plugin\DataType\ComponentInputs;
 use Drupal\canvas\PropSource\PropSource;
 use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Utility\NestedArray;
-use Drupal\content_translation\FieldTranslationSynchronizerInterface;
 use Drupal\Core\Block\MessagesBlockPluginInterface;
 use Drupal\Core\Block\TitleBlockPluginInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;

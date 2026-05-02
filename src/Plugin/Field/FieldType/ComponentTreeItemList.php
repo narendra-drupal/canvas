@@ -611,8 +611,7 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
     return $this->isPropTranslationSynced('inputs');
   }
 
-  private function isPropTranslationSynced(string $prop): bool
-  {
+  private function isPropTranslationSynced(string $prop): bool {
     if (!\Drupal::hasService(FieldTranslationSynchronizerInterface::class)) {
       // If the service does not exist, we are not syncing tree.
       return FALSE;
@@ -622,7 +621,7 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
     // If we are syncing uuid then we are syncing "tree", if the default
     // translation does not have this item it means it was removed.
     // @todo Real solution is probably already have removed the item in.
-    //    \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
+    //   \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
     //    somewhere before this?
     return \in_array($prop, $sync_props, TRUE);
   }

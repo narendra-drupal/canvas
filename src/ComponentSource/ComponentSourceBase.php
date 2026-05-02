@@ -7,8 +7,6 @@ namespace Drupal\canvas\ComponentSource;
 use Drupal\canvas\Entity\Component;
 use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\Component\Utility\NestedArray;
-use Drupal\content_translation\FieldTranslationSynchronizer;
-use Drupal\content_translation\FieldTranslationSynchronizerInterface;
 use Drupal\Core\Config\Schema\Mapping;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -265,7 +263,7 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
         // If we are syncing the "tree", the default
         // translation does not have this item it means it was removed.
         // @todo Real solution is probably already have removed the item in.
-        //    \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
+        //   \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
         //    somewhere before this?
         if ($tree->isTreeTranslationSynced()) {
           return new ConstraintViolationList();
