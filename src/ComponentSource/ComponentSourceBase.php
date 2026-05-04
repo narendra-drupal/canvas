@@ -220,7 +220,7 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
   }
 
   public function getExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
-    $default_translation = $this->getDefaultTranslation($uuid, $item, $host_entity);
+    $default_translation = $this->getDefaultTranslationEntity($host_entity);
     $default_translation_explicit_input = NULL;
     if ($default_translation) {
       $default_translation_item = $this->componentTreeLoader->load($default_translation)->getComponentTreeItemByUuid($uuid);
@@ -241,10 +241,6 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
       return $host_entity->getUntranslated();
     }
     return NULL;
-  }
-
-  protected function getDefaultTranslation(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
-    return $this->getDefaultTranslationEntity($host_entity);
   }
 
   public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
