@@ -16,7 +16,7 @@ import NotificationBell from '@/features/notifications/NotificationBell';
 import { selectEditorFrameContext } from '@/features/ui/uiSlice';
 import useEditorNavigation from '@/hooks/useEditorNavigation';
 import { useGetPreviewContentEntitiesQuery } from '@/services/componentAndLayout';
-import { getDrupalSettings } from '@/utils/drupal-globals';
+import { getCanvasSettings, getDrupalSettings } from '@/utils/drupal-globals';
 
 import PageInfo from '../pageInfo/PageInfo';
 
@@ -39,6 +39,13 @@ const Topbar = () => {
   let hasPersonalizeExtensionAvailable = false;
 
   const drupalSettings = getDrupalSettings();
+  const canvasSettings = getCanvasSettings();
+
+  const isTranslationEnabled =
+    canvasSettings?.devTranslationMode &&
+    (canvasSettings?.contentTranslationEnabled ||
+      canvasSettings?.configTranslationEnabled);
+
   if (
     drupalSettings?.canvas?.aiExtensionAvailable &&
     (drupalSettings.canvas as any).permissions?.useCanvasAi === true
@@ -160,7 +167,7 @@ const Topbar = () => {
             width={leftRightColumnWidth}
           >
             <NotificationBell />
-            <LanguageSelector />
+            {isTranslationEnabled && <LanguageSelector />}
             <PreviewControls isPreview={isPreview} />
             <UnpublishedChanges />
           </Flex>
