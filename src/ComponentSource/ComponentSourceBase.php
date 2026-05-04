@@ -219,6 +219,9 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
     $default_translation = $this->getDefaultTranslationEntity($host_entity);
     $default_translation_explicit_input = NULL;
@@ -236,13 +239,16 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     return $explicit_input;
   }
 
-  protected function getDefaultTranslationEntity(?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
+  private function getDefaultTranslationEntity(?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
     if ($host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
       return $host_entity->getUntranslated();
     }
     return NULL;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
     $default_entity = $this->getDefaultTranslationEntity($entity);
     if ($default_entity !== NULL) {
