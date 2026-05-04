@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// cspell:ignore magnifique
+// cspell:ignore magnifique Propulsé Bienvenue savoir Découvrez Identité visuelle
 
 namespace Drupal\Tests\canvas\Functional;
 
@@ -166,12 +166,12 @@ class TranslationTest extends FunctionalTestBase {
    */
   public function testContentTemplateTranslationRendered(): void {
     $this->setFieldTranslatble(['inputs']);
-    $original_node = $this->createCanvasNodeWithTranslation(TRUE);
 
     $template = ContentTemplate::load('node.article.full');
     self::assertNotNull($template);
     $template->setStatus(TRUE)->save();
 
+    $original_node = $this->createCanvasNodeWithTranslation(TRUE);
     $this->assertTrue($original_node->isDefaultTranslation());
     $translated_node = $original_node->getTranslation('fr');
     $this->assertSame('The French title', (string) $translated_node->getTitle());
