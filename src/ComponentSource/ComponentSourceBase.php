@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\canvas\ComponentSource;
 
 use Drupal\canvas\Entity\Component;
+use Drupal\canvas\Plugin\DataType\ComponentInputs;
 use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\Schema\Mapping;
@@ -15,6 +16,7 @@ use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 use Drupal\Core\Plugin\ContextAwarePluginTrait;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
+use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
@@ -252,8 +254,36 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
   public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
     $default_entity = $this->getDefaultTranslationEntity($entity);
     if ($default_entity !== NULL) {
-      $tree = $this->componentTreeLoader->load($default_entity);
-      $default_item = $tree->getComponentTreeItemByUuid($component_instance_uuid);
+      // We now know this is not the default translation. Ensure that $inputs
+      // does not contain any non-translatable keys.
+      // @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys().
+      $tree = $this->componentTreeLoader->load($entity);
+      $item = $tree->getComponentTreeItemByUuid($component_instance_uuid);
+      $inputs_typed_data = $item->get('inputs');
+      \assert($inputs_typed_data instanceof ComponentInputs);
+      $translatable_keys = $inputs_typed_data->getTranslatableInputKeys();
+      $non_translatable_input_keys = array_diff(array_keys($inputValues), $translatable_keys);
+      if (!empty($non_translatable_input_keys)) {
+        // @todo Write explicit tests trying to save non-translatable keys in a
+        //   non-default translation, and ensuring the violation list contains
+        //   the expected violations with the expected messages and property
+        //   paths.
+        $violation_list = new ConstraintViolationList();
+        foreach ($non_translatable_input_keys as $non_translatable_input_key) {
+          $violation_list->add(new ConstraintViolation(
+            'non-translatable keys are not allow in translation',
+            'non-translatable keys are not allow in translation',
+            [],
+            NULL,
+            "inputs.$non_translatable_input_key",
+            $inputValues[$non_translatable_input_key]
+          ));
+        }
+        return $violation_list;
+      }
+
+      $default_tree = $this->componentTreeLoader->load($default_entity);
+      $default_item = $default_tree->getComponentTreeItemByUuid($component_instance_uuid);
       if ($default_item !== NULL) {
         foreach ($default_item->getInputs() ?? [] as $key => $value) {
           if (!\array_key_exists($key, $inputValues)) {

@@ -704,6 +704,8 @@ class TranslationTest extends FunctionalTestBase {
     $this->container->get('content_translation.manager')->getTranslationMetadata($translation)->setSource($node->language()->getId());
     // @phpstan-ignore-next-line
     $translation->title = 'The French title';
+    $violation_list = $translation->validate();
+    $this->assertCount(0, $violation_list, (string) $violation_list);
     $translation->save();
     $translation = $node->getTranslation('fr');
     $updated_item = $list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
