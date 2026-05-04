@@ -84,10 +84,13 @@ const LanguageSelector = () => {
       // Clear any existing cache for fresh language fetch.
       dispatch(componentAndLayoutApi.util.invalidateTags([{ type: 'Layout' }]));
 
-      // Navigate to preview with the language info in state
-      navigate(`/preview/${entityType}/${entityId}/full`, {
-        state: { isLanguagePreview: true, language: languageId },
-      });
+      // Navigate to preview with the language info in URL query parameter and state
+      navigate(
+        `/preview/${entityType}/${entityId}/full?language=${languageId}`,
+        {
+          state: { isLanguagePreview: true, language: languageId },
+        },
+      );
     }
   };
 
