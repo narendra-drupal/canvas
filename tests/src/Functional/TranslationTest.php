@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// cspell:ignore magnifique Propulsé Bienvenue savoir Découvrez Identité visuelle
+// cspell:ignore Cliquez magnifique Propulsé Bienvenue savoir Découvrez Identité visuelle
 
 namespace Drupal\Tests\canvas\Functional;
 
@@ -165,7 +165,7 @@ class TranslationTest extends FunctionalTestBase {
    * @see \Drupal\Tests\canvas\Kernel\Config\ContentTemplateTest::testTranslationLifeCycleInDepth()
    */
   public function testContentTemplateTranslationRendered(): void {
-    $this->setFieldTranslatble(['inputs']);
+    $this->setFieldTranslatable(['inputs']);
 
     $template = ContentTemplate::load('node.article.full');
     self::assertNotNull($template);
@@ -494,7 +494,7 @@ class TranslationTest extends FunctionalTestBase {
 
     $field_is_translatable = !empty($translatable_properties);
 
-    $this->setFieldTranslatble($translatable_properties);
+    $this->setFieldTranslatable($translatable_properties);
 
     $original_node = $this->createCanvasNodeWithTranslation($translatable_properties);
     $this->assertTrue($original_node->isDefaultTranslation());
@@ -575,7 +575,7 @@ class TranslationTest extends FunctionalTestBase {
    * @see https://www.drupal.org/project/canvas/issues/3583684
    */
   public function testInvalidTranslationProps(): void {
-    $this->setFieldTranslatble(['inputs']);
+    $this->setFieldTranslatable(['inputs']);
 
     $cta_uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
     $component = Component::load('sdc.canvas_test_sdc.my-cta');
@@ -838,7 +838,7 @@ class TranslationTest extends FunctionalTestBase {
     $assert->pageTextContains('fr: Click here');
   }
 
-  private function setFieldTranslatble(array $translatable_properties): void {
+  private function setFieldTranslatable(array $translatable_properties): void {
     $page = $this->getSession()->getPage();
     $field_is_translatable = !empty($translatable_properties);
     $this->drupalGet('admin/config/regional/content-language');
