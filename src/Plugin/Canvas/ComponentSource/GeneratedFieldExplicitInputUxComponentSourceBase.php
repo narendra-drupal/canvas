@@ -423,12 +423,22 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     ];
   }
 
+  // @todo rename for translation
   protected function mergeDefaultExplicit(array $default_translation_explicit_input, array $explicit_input, ?FieldableEntityInterface $host_entity): array {
+    // Translations are never editin the Canvas UI(for now) so we only need resolved to
+    // for render......
     if (isset($default_translation_explicit_input['resolved'])) {
       foreach ($default_translation_explicit_input['resolved'] as $prop => $resolved_value) {
         if (!isset($explicit_input['resolved'][$prop])) {
           $explicit_input['resolved'][$prop] = $default_translation_explicit_input['resolved'][$prop];
         }
+        // @todo If/when Canvas' UI gains the ability to edit symmetrically
+        // translated component instances (using the well-established component
+        // instance form), `source` will likely need to be pouplated for each
+        // explicit input key ("SDC prop").
+//        if (!isset($explicit_input['source'][$prop])) {
+//          $explicit_input['source'][$prop] = InheritedFromDefaultTranslationBecauseSymmetricalPropSoruce;
+//        }
       }
     }
     return $explicit_input;

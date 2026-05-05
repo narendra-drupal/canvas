@@ -317,19 +317,34 @@ interface ComponentSourceInterface extends PluginInspectionInterface, Derivative
   public function clientModelToInput(string $component_instance_uuid, Component $component, array $client_model, ?FieldableEntityInterface $host_entity, ?ConstraintViolationListInterface $violations = NULL): array;
 
   /**
-   * Validates component input.
+   * Validates component instance input.
    *
-   * @param array $inputValues
-   *   Input values stored for this component.
-   * @param string $component_instance_uuid
-   *   Component instance UUID.
+   * 2 special cocnerns:
+   *
+   * 1. detect if the given component instance is for the default translation or NOT => look at $entity
+   *
+   * 2. determine if the component instance is for a symmetrically translated
+   *  content-defined component tree => ComponentTreeItem::getFieldDefinition() -> setting on here
+   * @see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList::isPropTranslationSynced
+   *
+   *
+   * @param ComponentTreeItem $component_instance
+   *   A component instnace, possibly symmetrically translated, in which case only
+   *   the translatable input keys swould be present.
+   *   For a symmetrical translation of a component instance, any key-value pair
+   *   that is
+   *   - present but not translatable MUST trigger a validation error
+   *   - absent and not translatable MUST NOT trigger a validation error
    * @param \Drupal\Core\Entity\FieldableEntityInterface|null $entity
    *   Host entity.
    *
    * @return \Symfony\Component\Validator\ConstraintViolationListInterface
    *   Any violations.
+   *
+   * @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys())
    */
-  public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface;
+  public function validateComponentInput(ComponentTreeItem $component_instance, ?FieldableEntityInterface $entity): ConstraintViolationListInterface;
+  //public function validateSymmetricallyTranslatedComponentInput(array $inputValues, array $defaultTranslationValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface;
 
   /**
    * Checks if component meets requirements.

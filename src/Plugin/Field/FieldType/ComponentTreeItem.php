@@ -8,6 +8,7 @@ use Drupal\canvas\Entity\ComponentTreeEntityInterface;
 use Drupal\canvas\PropSource\PropSource;
 use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\content_translation\FieldTranslationSynchronizerInterface;
 use Drupal\Core\Block\MessagesBlockPluginInterface;
 use Drupal\Core\Block\TitleBlockPluginInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -600,7 +601,7 @@ class ComponentTreeItem extends FieldItemBase {
     // this will catch that.
     // @see \Drupal\canvas\Plugin\Validation\Constraint\ValidComponentTreeItemConstraintValidator
     $input_values = $this->getInputs();
-    $component_violations = $source->validateComponentInput($input_values ?? [], $component_instance_uuid, $entity);
+    $component_violations = $source->validateComponentInput($input_values ?? [], $component_instance_uuid, $entity, $this);
     if ($component_violations->count() > 0) {
       // @todo Remove the foreach and use ::addAll once
       // https://www.drupal.org/project/drupal/issues/3490588 has been resolved.
@@ -709,4 +710,26 @@ class ComponentTreeItem extends FieldItemBase {
     }
   }
 
+  public function isTreeTranslationSynced(): bool {
+    return $this->isPropTranslationSynced('uuid');
+  }
+
+  public function isInputsTranslationSynced(): bool {
+    return $this->isPropTranslationSynced('inputs');
+  }
+
+  private function isPropTranslationSynced(string $prop): bool {
+    if (!\Drupal::hasService(FieldTranslationSynchronizerInterface::class)) {
+      // If the service does not exist, we are not syncing tree.
+      return FALSE;
+    }
+    $syncer = \Drupal::service(FieldTranslationSynchronizerInterface::class);
+    $sync_props = $syncer->getFieldSynchronizedProperties($this->getFieldDefinition());
+    // If we are syncing uuid then we are syncing "tree", if the default
+    // translation does not have this item it means it was removed.
+    // @todo Real solution is probably already have removed the item in.
+    //   \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
+    //   somewhere before this?
+    return \in_array($prop, $sync_props, TRUE);
+  }
 }

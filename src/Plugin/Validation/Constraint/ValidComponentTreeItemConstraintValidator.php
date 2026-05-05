@@ -104,6 +104,14 @@ final class ValidComponentTreeItemConstraintValidator extends ConstraintValidato
       }
     }
 
+    //   
+    //   *   A component instnace, possibly symmetrically translated, in which case only
+    //   *   the translatable input keys swould be present.
+    //   *   For a symmetrical translation of a component instance, any key-value pair
+    //   *   that is
+    //   *   - present but not translatable MUST trigger a validation error
+    //   *   - absent and not translatable MUST NOT trigger a validation error
+
     \assert(\is_array($stored_explicit_input));
     $component_violations = $this->translateConstraintPropertyPathsAndRoot(
       ['' => $this->context->getPropertyPath() . '.'],
