@@ -183,4 +183,96 @@ test.describe('Language Selector', () => {
     currentUrl = page.url();
     expect(currentUrl).not.toContain('?language=');
   });
+
+  test('Translation test page displays French content in preview', async ({
+    page,
+    drupal,
+    canvas,
+  }) => {
+    const drupalSite = drupal.drupalSite;
+
+    // Get the ID of the pre-created translation test page from canvas_dev_translation.install.
+    const getPageIdCommand = `php-eval "
+      \\$pages = \\Drupal::entityTypeManager()
+        ->getStorage('canvas_page')
+        ->loadByProperties(['title' => 'Canvas Translation Test Page']);
+      \\$page = reset(\\$pages);
+      if (\\$page) {
+        echo \\$page->id();
+      }
+    "`;
+
+    const pageIdResult = await execDrush(getPageIdCommand, {
+      url: drupalSite.url,
+      userAgent: drupalSite.userAgent,
+    });
+
+    const pageId = pageIdResult?.trim();
+    expect(pageId).toBeTruthy();
+
+    await page.goto(`/canvas/editor/canvas_page/${pageId}`);
+    await canvas.waitForEditorUi();
+
+    await expect(page.locator('text=Hello, Canvas!')).toBeVisible({
+      timeout: 5000,
+    });
+
+    const languageButton = page
+      .locator('[data-testid="canvas-topbar"] button')
+      .filter({ hasText: /English/ })
+      .first();
+    await expect(languageButton).toBeVisible();
+    await languageButton.click();
+
+    const frenchOption = page
+      .locator('[role="menuitem"]')
+      .filter({ hasText: /French/ })
+      .first();
+    await expect(frenchOption).toBeVisible();
+    await frenchOption.click();
+
+    await page.waitForURL(/\/preview\/canvas_page\/\d+\/full\?language=fr/, {
+      timeout: 10000,
+    });
+
+    const previewUrl = page.url();
+    expect(previewUrl).toContain(`language=fr`);
+    expect(previewUrl).toContain(`/preview/canvas_page/${pageId}/full`);
+
+    const previewFrame = page.frameLocator('iframe[title="Page preview"]');
+    await expect(previewFrame.locator('body')).not.toBeEmpty();
+
+    await expect(previewFrame.locator('text=Bonjour, Canvas!')).toBeVisible({
+      timeout: 5000,
+    });
+
+    await expect(previewFrame.locator('text=Hello, Canvas!')).not.toBeVisible();
+
+    const frameHtmlLang = await previewFrame
+      .locator('html')
+      .getAttribute('lang');
+    if (frameHtmlLang) {
+      expect(frameHtmlLang).toMatch(/^fr/i);
+    }
+
+    const frenchButton = page
+      .locator('[data-testid="canvas-topbar"] button')
+      .filter({ hasText: /French/ })
+      .first();
+    await expect(frenchButton).toBeVisible();
+    await frenchButton.click();
+
+    const englishOption = page
+      .locator('[role="menuitem"]:has-text("(Default)")')
+      .first();
+    await englishOption.click();
+
+    await page.waitForURL(/\/editor\/canvas_page\//, { timeout: 10000 });
+    const editorUrl = page.url();
+    expect(editorUrl).not.toContain('?language=');
+
+    await expect(page.locator('text=Hello, Canvas!')).toBeVisible({
+      timeout: 5000,
+    });
+  });
 });
