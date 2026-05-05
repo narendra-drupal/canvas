@@ -7,6 +7,7 @@ namespace Drupal\canvas\Tmgmt;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
 use Drupal\canvas\PropSource\PropSource;
 use Drupal\canvas\PropSource\StaticPropSource;
+use Drupal\Core\Field\TypedData\FieldItemDataDefinitionInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\tmgmt_content\LinkFieldProcessor;
@@ -180,9 +181,11 @@ final class ComponentTreeFieldProcessor extends LinkFieldProcessor {
   private function rewrapForParentSetTranslations(array $data, StaticPropSource $source): array {
     $children = Element::children($data);
 
+    $field_item_definition = $source->fieldItemList->getItemDefinition();
+    \assert($field_item_definition instanceof FieldItemDataDefinitionInterface)
     if (empty($children) && isset($data['#text'])) {
       // Fully collapsed leaf: wrap in delta + property.
-      $main_property = $source->fieldItemList->getItemDefinition()->getMainPropertyName();
+      $main_property = $field_item_definition->getMainPropertyName();
       return [0 => [$main_property => $data]];
     }
 
@@ -191,7 +194,7 @@ final class ComponentTreeFieldProcessor extends LinkFieldProcessor {
       foreach ($children as $fd) {
         $fd_children = Element::children($data[$fd]);
         if (empty($fd_children) && isset($data[$fd]['#text'])) {
-          $main_property ??= $source->fieldItemList->getItemDefinition()->getMainPropertyName();
+          $main_property ??= $field_item_definition->getMainPropertyName();
           $data[$fd] = [$main_property => $data[$fd]];
         }
       }
