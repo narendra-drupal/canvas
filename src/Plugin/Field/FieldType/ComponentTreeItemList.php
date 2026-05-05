@@ -622,7 +622,7 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
     // translation does not have this item it means it was removed.
     // @todo Real solution is probably already have removed the item in.
     //   \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
-    //    somewhere before this?
+    //   somewhere before this?
     return \in_array($prop, $sync_props, TRUE);
   }
 

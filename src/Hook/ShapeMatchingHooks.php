@@ -58,8 +58,6 @@ use Symfony\Component\Validator\Constraints\Ip;
  */
 class ShapeMatchingHooks {
 
-
-
   const SCHEMA_TO_MEDIA_SOURCE = [
     // @see \Drupal\media\Plugin\media\Source\Image
     'json-schema-definitions://canvas.module/image' => Image::class,

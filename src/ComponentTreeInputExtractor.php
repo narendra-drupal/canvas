@@ -53,7 +53,6 @@ final readonly class ComponentTreeInputExtractor {
 
       $input = $component->getComponentSource()
         // @todo why don't send the host entity when we have it here?
-        // ->getExplicitInput($component_instance_uuid, $component_tree_item, $entity);
         ->getExplicitInput($component_instance_uuid, $component_tree_item);
 
       foreach ($prop_shapes as $prop_expression => $prop_shape) {

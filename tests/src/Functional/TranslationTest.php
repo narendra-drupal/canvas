@@ -821,9 +821,7 @@ class TranslationTest extends FunctionalTestBase {
     $assert->pageTextContains('fr: Click here');
 
     $this->submitForm([], 'Save as completed');
-    $assert->pageTextContains((string) t('The translation for @source has been accepted', [
-      '@source' => $canvas_page->label(),
-    ]));
+    $assert->pageTextContains(\sprintf('The translation for %s has been accepted', $canvas_page->label()));
 
     $canvas_page = Page::load($page_id);
     self::assertNotNull($canvas_page);
