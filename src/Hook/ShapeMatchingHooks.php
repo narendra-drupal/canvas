@@ -57,12 +57,17 @@ use Symfony\Component\Validator\Constraints\Ip;
  */
 class ShapeMatchingHooks {
 
+
+
   const SCHEMA_TO_MEDIA_SOURCE = [
     // @see \Drupal\media\Plugin\media\Source\Image
     'json-schema-definitions://canvas.module/image' => Image::class,
     // @see \Drupal\media\Plugin\media\Source\VideoFile
     'json-schema-definitions://canvas.module/video' => VideoFile::class,
   ];
+
+  public function __construct(private readonly ModuleHandlerInterface $moduleHandler) {
+  }
 
   /**
    * Implements hook_validation_constraint_alter().
@@ -133,7 +138,7 @@ class ShapeMatchingHooks {
     // translatable prop appears as a separate string in the TMGMT review form.
     // @see \Drupal\canvas\Tmgmt\ComponentTreeFieldProcessor
     // @see https://www.drupal.org/project/canvas/issues/3583684
-    if (isset($info['component_tree']) && \Drupal::moduleHandler()->moduleExists('tmgmt_content')) {
+    if (isset($info['component_tree']) && $this->moduleHandler->moduleExists('tmgmt_content')) {
       $info['component_tree']['tmgmt_field_processor'] = ComponentTreeFieldProcessor::class;
     }
   }

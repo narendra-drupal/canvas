@@ -106,7 +106,7 @@ final class InvalidSlots extends ComponentSourceBase implements ComponentSourceW
   /**
    * {@inheritdoc}
    */
-  protected function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
+  protected function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_host_entity = NULL): array {
     return [];
   }
 

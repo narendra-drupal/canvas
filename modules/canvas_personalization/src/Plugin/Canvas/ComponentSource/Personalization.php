@@ -174,7 +174,7 @@ final class Personalization extends ComponentSourceBase implements
     return TRUE;
   }
 
-  protected function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
+  protected function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_host_entity = NULL): array {
     try {
       // Inputs might be NULL, so ensure we return a valid array.
       return $item->getInputs() ?? $this->getDefaultExplicitInput();

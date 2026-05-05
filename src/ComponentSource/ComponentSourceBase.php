@@ -330,7 +330,7 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     $discovery->checkRequirements($this->getSourceSpecificComponentId());
   }
 
-  abstract protected function doGetExplicitInput(string $uuid, ComponentTreeItem $default_translation_item, FieldableEntityInterface $default_translation): array;
+  abstract protected function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): array;
 
   abstract protected function doValidateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface;
 
