@@ -562,19 +562,14 @@ class TranslationTest extends FunctionalTestBase {
   }
 
   /**
-   * Tests that preSave() automatically strips non-translatable input keys.
-   *
-   * When saving a non-default translation, ComponentTreeItem::preSave() should
-   * use getTranslatableInputKeys() to strip non-translatable keys from inputs.
-   * Non-translatable values are then merged from the default translation at
-   * read time by ComponentSourceBase::getExplicitInput().
+   * Tests that non-translatable properties cannot be saved in translations.
    *
    * Uses the 'my-cta' SDC which has:
    * - text: type: string (translatable)
    * - href: type: string, format: uri (translatable)
    * - target: type: string, enum: [_self, _blank] (NOT translatable — enums)
    *
-   * @see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem::preSave()
+   * @see \Drupal\canvas\ComponentSource\ComponentSourceBase::validateComponentInput()
    * @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys()
    * @see \Drupal\canvas\ComponentSource\ComponentSourceBase::getExplicitInput()
    * @see https://www.drupal.org/project/canvas/issues/3583684
@@ -620,15 +615,13 @@ class TranslationTest extends FunctionalTestBase {
     self::assertContains('text', $translatable_keys);
     self::assertNotContains('target', $translatable_keys, 'enum prop should not be translatable');
 
-    // Create a French translation. Explicitly set the component tree with
-    // ALL inputs including the non-translatable 'target' — preSave() should
-    // strip it automatically.
     $translation = $node->addTranslation('fr');
     $this->container->get('content_translation.manager')
       ->getTranslationMetadata($translation)
       ->setSource($node->language()->getId());
     // @phpstan-ignore-next-line
     $translation->title = 'French title';
+    // Attempt to set 'target' which is not a translatable property.
     $translation->set('field_canvas_test', [
       [
         'uuid' => $cta_uuid,
@@ -641,9 +634,25 @@ class TranslationTest extends FunctionalTestBase {
         ],
       ],
     ]);
+    self::assertSame(['field_canvas_test.0.inputs.target' => 'non-translatable keys are not allow in translation'], self::violationsToArray($translation->validate()));
+
+    // Remove 'target' leaving only translatable properties.
+    $translation->set('field_canvas_test', [
+      [
+        'uuid' => $cta_uuid,
+        'component_id' => 'sdc.canvas_test_sdc.my-cta',
+        'component_version' => $version,
+        'inputs' => [
+          'text' => 'Cliquez ici',
+          'href' => 'https://drupal.fr',
+        ],
+      ],
+    ]);
+    self::assertSame([], self::violationsToArray($translation->validate()));
     $translation->save();
 
-    // Reload and verify non-translatable 'target' was stripped.
+    // Reload and verify non-translatable 'target' is not stored in the
+    // translation's inputs.
     $node = Node::load($node->id());
     self::assertNotNull($node);
     $fr_node = $node->getTranslation('fr');
@@ -682,6 +691,7 @@ class TranslationTest extends FunctionalTestBase {
     self::assertNotNull($component_source);
     $resolved = $component_source->getResolvedExplicitInput($cta_uuid, $fr_cta, $fr_node);
     self::assertSame('Cliquez ici', $resolved['text']->value, 'Translated text should be preserved');
+    self::assertSame('https://drupal.fr', $resolved['href']->value, 'Translated href should be preserved');
     self::assertSame('_blank', $resolved['target']->value, 'Updated non-translatable target should be merged from default');
   }
 
