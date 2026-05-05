@@ -252,53 +252,58 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
    * {@inheritdoc}
    */
   public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
-    $default_entity = $this->getDefaultTranslationEntity($entity);
-    if ($default_entity !== NULL) {
-      // We now know this is not the default translation. Ensure that $inputs
-      // does not contain any non-translatable keys.
-      // @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys().
+    if ($entity instanceof FieldableEntityInterface) {
       $tree = $this->componentTreeLoader->load($entity);
-      $item = $tree->getComponentTreeItemByUuid($component_instance_uuid);
-      $inputs_typed_data = $item->get('inputs');
-      \assert($inputs_typed_data instanceof ComponentInputs);
-      $translatable_keys = $inputs_typed_data->getTranslatableInputKeys();
-      $non_translatable_input_keys = array_diff(array_keys($inputValues), $translatable_keys);
-      if (!empty($non_translatable_input_keys)) {
-        // @todo Write explicit tests trying to save non-translatable keys in a
-        //   non-default translation, and ensuring the violation list contains
-        //   the expected violations with the expected messages and property
-        //   paths.
-        $violation_list = new ConstraintViolationList();
-        foreach ($non_translatable_input_keys as $non_translatable_input_key) {
-          $violation_list->add(new ConstraintViolation(
-            'non-translatable keys are not allow in translation',
-            'non-translatable keys are not allow in translation',
-            [],
-            NULL,
-            "inputs.$non_translatable_input_key",
-            $inputValues[$non_translatable_input_key]
-          ));
-        }
-        return $violation_list;
-      }
-
-      $default_tree = $this->componentTreeLoader->load($default_entity);
-      $default_item = $default_tree->getComponentTreeItemByUuid($component_instance_uuid);
-      if ($default_item !== NULL) {
-        foreach ($default_item->getInputs() ?? [] as $key => $value) {
-          if (!\array_key_exists($key, $inputValues)) {
-            $inputValues[$key] = $value;
+      if ($tree->isTreeTranslationSynced() && !$tree->isInputsTranslationSynced()) {
+        $default_entity = $this->getDefaultTranslationEntity($entity);
+        if ($default_entity !== NULL) {
+          // We now know this is not the default translation. Ensure that $inputs
+          // does not contain any non-translatable keys.
+          // @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys().
+          $item = $tree->getComponentTreeItemByUuid($component_instance_uuid);
+          \assert($item instanceof ComponentTreeItem);
+          $inputs_typed_data = $item->get('inputs');
+          \assert($inputs_typed_data instanceof ComponentInputs);
+          $translatable_keys = $inputs_typed_data->getTranslatableInputKeys();
+          $non_translatable_input_keys = array_diff(array_keys($inputValues), $translatable_keys);
+          if (!empty($non_translatable_input_keys)) {
+            // @todo Write explicit tests trying to save non-translatable keys in a
+            //   non-default translation, and ensuring the violation list contains
+            //   the expected violations with the expected messages and property
+            //   paths.
+            $violation_list = new ConstraintViolationList();
+            foreach ($non_translatable_input_keys as $non_translatable_input_key) {
+              $violation_list->add(new ConstraintViolation(
+                'non-translatable keys are not allow in translation',
+                'non-translatable keys are not allow in translation',
+                [],
+                NULL,
+                "inputs.$non_translatable_input_key",
+                $inputValues[$non_translatable_input_key]
+              ));
+            }
+            return $violation_list;
           }
-        }
-      }
-      else {
-        // If we are syncing the "tree", the default
-        // translation does not have this item it means it was removed.
-        // @todo Real solution is probably already have removed the item in.
-        //   \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
-        //    somewhere before this?
-        if ($tree->isTreeTranslationSynced()) {
-          return new ConstraintViolationList();
+
+          $default_tree = $this->componentTreeLoader->load($default_entity);
+          $default_item = $default_tree->getComponentTreeItemByUuid($component_instance_uuid);
+          if ($default_item !== NULL) {
+            foreach ($default_item->getInputs() ?? [] as $key => $value) {
+              if (!\array_key_exists($key, $inputValues)) {
+                $inputValues[$key] = $value;
+              }
+            }
+          }
+          else {
+            // If we are syncing the "tree", the default
+            // translation does not have this item it means it was removed.
+            // @todo Real solution is probably already have removed the item in.
+            //   \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
+            //    somewhere before this?
+            if ($tree->isTreeTranslationSynced()) {
+              return new ConstraintViolationList();
+            }
+          }
         }
       }
     }

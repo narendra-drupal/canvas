@@ -171,7 +171,7 @@ class TranslationTest extends FunctionalTestBase {
     self::assertNotNull($template);
     $template->setStatus(TRUE)->save();
 
-    $original_node = $this->createCanvasNodeWithTranslation(TRUE);
+    $original_node = $this->createCanvasNodeWithTranslation(['inputs']);
     $this->assertTrue($original_node->isDefaultTranslation());
     $translated_node = $original_node->getTranslation('fr');
     $this->assertSame('The French title', (string) $translated_node->getTitle());
@@ -496,7 +496,7 @@ class TranslationTest extends FunctionalTestBase {
 
     $this->setFieldTranslatble($translatable_properties);
 
-    $original_node = $this->createCanvasNodeWithTranslation(\in_array('inputs', $translatable_properties, TRUE));
+    $original_node = $this->createCanvasNodeWithTranslation($translatable_properties);
     $this->assertTrue($original_node->isDefaultTranslation());
     $translated_node = $original_node->getTranslation('fr');
     $this->assertSame('The French title', (string) $translated_node->getTitle());
@@ -691,7 +691,7 @@ class TranslationTest extends FunctionalTestBase {
    * @return \Drupal\node\Entity\Node
    *   The default translation of the node.
    */
-  protected function createCanvasNodeWithTranslation(bool $translatable_inputs): Node {
+  protected function createCanvasNodeWithTranslation(array $translatable_properties): Node {
     $node = $this->createTestNode();
     $list = $node->get('field_canvas_test');
     \assert($list instanceof ComponentTreeItemList);
@@ -716,7 +716,7 @@ class TranslationTest extends FunctionalTestBase {
     // translation.
     $french_inputs = $updated_item_inputs;
     $french_inputs['heading'] = 'bonjour, monde!';
-    if ($translatable_inputs) {
+    if ($translatable_properties === ['inputs']) {
       // The `cta1href` prop even though it is `type: string` also has
       // `format: uri-reference` so it should not be translatable in symmetric
       // translations.
