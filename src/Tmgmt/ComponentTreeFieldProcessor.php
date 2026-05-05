@@ -182,7 +182,7 @@ final class ComponentTreeFieldProcessor extends LinkFieldProcessor {
     $children = Element::children($data);
 
     $field_item_definition = $source->fieldItemList->getItemDefinition();
-    \assert($field_item_definition instanceof FieldItemDataDefinitionInterface)
+    \assert($field_item_definition instanceof FieldItemDataDefinitionInterface);
     if (empty($children) && isset($data['#text'])) {
       // Fully collapsed leaf: wrap in delta + property.
       $main_property = $field_item_definition->getMainPropertyName();
