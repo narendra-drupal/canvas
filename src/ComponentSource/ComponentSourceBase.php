@@ -291,14 +291,12 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
             }
           }
           else {
-            // If we are syncing the "tree", the default
-            // translation does not have this item it means it was removed.
+            // The 'tree' is being synced if default translation does not have
+            // this item it means it was removed.
             // @todo Real solution is probably already have removed the item in.
             //   \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
             //   somewhere before this?
-            if ($tree->isTreeTranslationSynced()) {
-              return new ConstraintViolationList();
-            }
+            return new ConstraintViolationList();
           }
         }
       }

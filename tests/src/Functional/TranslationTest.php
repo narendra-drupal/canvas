@@ -661,6 +661,7 @@ class TranslationTest extends FunctionalTestBase {
     $fr_cta = $fr_list->getComponentTreeItemByUuid($cta_uuid);
     \assert($fr_cta instanceof ComponentTreeItem);
     $fr_stored_inputs = $fr_cta->getInputs();
+    self::assertIsArray($fr_stored_inputs);
     self::assertArrayHasKey('text', $fr_stored_inputs);
     self::assertSame('Cliquez ici', $fr_stored_inputs['text']);
     self::assertArrayNotHasKey('target', $fr_stored_inputs, 'Non-translatable target should have been stripped on save');
@@ -829,6 +830,8 @@ class TranslationTest extends FunctionalTestBase {
     $fr_component = $fr_page->getComponentTree()->getComponentTreeItemByUuid($component_uuid);
     self::assertNotNull($fr_component);
     $fr_inputs = $fr_component->getInputs();
+    self::assertIsArray($fr_inputs);
+    self::assertArrayHasKey('title', $fr_inputs);
     self::assertSame('fr: Click here', $fr_inputs['title']);
 
     $this->drupalGet('/fr/page/' . $page_id);
