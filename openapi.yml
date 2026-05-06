@@ -1689,6 +1689,26 @@ paths:
               schema:
                 type: object
                 description: A Drupal AJAX response.
+  '/canvas/api/v0/languages':
+    description: Languages available on the site
+    get:
+      summary: Returns the list of available languages
+      responses:
+        '200':
+          description: List of available languages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Language code
+                    label:
+                      type: string
+                      description: Language name
   '/canvas/api/v0/layout-content-template/{configEntityId}/{entityId}':
     description: Layout content template endpoints for managing layout components with preview entity context
     parameters:
