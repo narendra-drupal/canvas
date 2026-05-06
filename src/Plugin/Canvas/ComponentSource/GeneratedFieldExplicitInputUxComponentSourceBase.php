@@ -113,9 +113,9 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     private readonly PropSourceSuggester $propSourceSuggester,
     private readonly LoggerChannelInterface $logger,
     protected readonly PropShapeRepositoryInterface $propShapeRepository,
-    ComponentTreeLoader $componentTreeLoader,
   ) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $componentTreeLoader);
+    \assert(\array_key_exists('local_source_id', $configuration));
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
 
   /**
@@ -133,7 +133,6 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
       $container->get(PropSourceSuggester::class),
       $container->get('logger.channel.canvas'),
       $container->get(PropShapeRepositoryInterface::class),
-      $container->get(ComponentTreeLoader::class),
     );
   }
 
@@ -593,7 +592,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
   /**
    * {@inheritdoc}
    */
-  protected function doValidateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
+  public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity, ?ComponentTreeItem $item = NULL): ConstraintViolationListInterface {
     $violations = new ConstraintViolationList();
     $prop_field_definitions = $this->configuration['prop_field_definitions'];
 
@@ -730,9 +729,20 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
       // @see \Drupal\canvas\Plugin\Validation\Constraint\ComponentTreeStructureConstraintValidator
     }
     catch (InvalidComponentException $e) {
+
       // Deconstruct the multi-part exception message constructed by SDC.
       // @see \Drupal\Core\Theme\Component\ComponentValidator::validateProps()
       $errors = explode("\n", $e->getMessage());
+      $is_non_default_translation = FALSE;
+      $translatable_keys = [];
+      if ($entity && $item) {
+        $is_non_default_translation = $this->getDefaultTranslationEntity($entity) !== NULL;
+        if ($is_non_default_translation && $item->isTreeTranslationSynced() && !$item->isInputsTranslationSynced()) {
+          $translatable_keys = $item->get('inputs')->getTranslatableInputKeys();
+        }
+      }
+
+
       foreach ($errors as $error) {
         // An example error:
         // phpcs:disable Drupal.Files.LineLength.TooLong
@@ -751,6 +761,9 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
 
         if (\str_contains($prop_name, '/')) {
           [, $prop_name] = \explode('/', $prop_name);
+        }
+        if ($is_non_default_translation && !in_array($prop_name, $translatable_keys, TRUE)) {
+          continue;
         }
         $violations->add(
           new ConstraintViolation(

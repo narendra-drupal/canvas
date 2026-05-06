@@ -728,10 +728,6 @@ class TranslationTest extends FunctionalTestBase {
     $french_inputs = $updated_item_inputs;
     $french_inputs['heading'] = 'bonjour, monde!';
     if ($translatable_properties === ['inputs']) {
-      // The `cta1href` prop even though it is `type: string` also has
-      // `format: uri-reference` so it should not be translatable in symmetric
-      // translations.
-      unset($french_inputs['cta1href']);
       // `attributes` should also not be translatable.
       unset($french_inputs['attributes']);
     }

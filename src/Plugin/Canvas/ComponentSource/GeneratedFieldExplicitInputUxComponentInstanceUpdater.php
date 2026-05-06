@@ -141,7 +141,7 @@ final class GeneratedFieldExplicitInputUxComponentInstanceUpdater implements Com
     $component_uuid = $component_instance->getUuid();
     $violations = $target_source->validateComponentInput(
       inputValues: $inputs,
-      component_instance: $component_instance,
+      component_instance_uuid: $component_uuid,
       entity: NULL,
     );
     // Collect prop names that have violations in the target version.

@@ -35,15 +35,6 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
   use ContextAwarePluginAssignmentTrait;
   use ContextAwarePluginTrait;
 
-  public function __construct(
-    array $configuration,
-    string $plugin_id,
-    array $plugin_definition,
-    protected readonly ComponentTreeLoader $componentTreeLoader,
-  ) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-  }
-
   public function determineDefaultFolder(): string {
     return 'Other';
   }
@@ -229,14 +220,22 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     $default_translation = $this->getDefaultTranslationEntity($host_entity);
     $default_translation_explicit_input = NULL;
     if ($default_translation) {
-      $field_name = $item->getFieldDefinition()->getName();
-      $default_component_tree = $default_translation->get($field_name);
-      \assert($default_component_tree instanceof ComponentTreeItemList);
-      $default_translation_item = $default_component_tree->getComponentTreeItemByUuid($uuid);
-      if ($default_translation_item) {
-        // The default translation has the component instance.
-        $default_translation_explicit_input = $this->doGetExplicitInput($uuid, $default_translation_item, $default_translation);
+      // @todo see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemListInstantiatorTrait::staticallyCreateDanglingComponentTreeItemList
+      //   as to why this hacky check for `dangling_component_tree` is here right now.
+      //   How else would I know that $host_entity an entity that a ContentTemplate is rendering and that $item is not from a field on that entity but rather a "dangling" item.
+      //   In the case that it is ContentTemplate the inputs props have already
+      //   been merged by the config overrided system.
+      $field_name = $item->getParent()->getName();
+      if ($field_name !== 'dangling_component_tree') {
+        $default_component_tree = $default_translation->get($field_name);
+        \assert($default_component_tree instanceof ComponentTreeItemList);
+        $default_translation_item = $default_component_tree->getComponentTreeItemByUuid($uuid);
+        if ($default_translation_item) {
+          // The default translation has the component instance.
+          $default_translation_explicit_input = $this->doGetExplicitInput($uuid, $default_translation_item, $default_translation);
+        }
       }
+
     }
     $explicit_input = $this->doGetExplicitInput($uuid, $item, $host_entity);
     if ($default_translation_explicit_input) {
@@ -245,74 +244,11 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     return $explicit_input;
   }
 
-  private function getDefaultTranslationEntity(?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
+  protected function getDefaultTranslationEntity(?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
     if ($host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
       return $host_entity->getUntranslated();
     }
     return NULL;
-  }
-
-  /**
-   * {@inheritdoc}
-   *
-   * @todo Do we need the $item here to get the field setting to determin if we syncing tree and not inputs
-   *    Actually can move all NEW logic this into \Drupal\canvas\Plugin\Validation\Constraint\ValidComponentTreeItemConstraintValidator::validate
-   */
-  public function validateComponentInput(ComponentTreeItem $instance, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
-    $inputValues = $instance->getInputs() ?? [];
-    if ($entity instanceof FieldableEntityInterface) {
-      //$tree = $this->componentTreeLoader->load($entity);
-      // @todo do not tree loader becase we can get field defintion from item
-      //    also do not need to load default inpu
-      if ($instance->isTreeTranslationSynced() && !$instance->isInputsTranslationSynced()) {
-        //$default_entity = $this->getDefaultTranslationEntity($entity);
-        $is_translated = DOSOMETHINGHERE();
-        if ($is_translated) {
-          // We now know this is not the default translation. Ensure that
-          // $inputs does not contain any non-translatable keys.
-          // @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys().
-          //$item = $tree->getComponentTreeItemByUuid($component_instance_uuid);
-//          \assert($item instanceof ComponentTreeItem);
-          $inputs_typed_data = $instance->get('inputs');
-          \assert($inputs_typed_data instanceof ComponentInputs);
-          $translatable_keys = $inputs_typed_data->getTranslatableInputKeys();
-          $non_translatable_input_keys = array_diff(\array_keys($inputValues), $translatable_keys);
-          if (!empty($non_translatable_input_keys)) {
-            $violation_list = new ConstraintViolationList();
-            foreach ($non_translatable_input_keys as $non_translatable_input_key) {
-              $violation_list->add(new ConstraintViolation(
-                'non-translatable keys are not allow in translation',
-                'non-translatable keys are not allow in translation',
-                [],
-                NULL,
-                "inputs.$non_translatable_input_key",
-                $inputValues[$non_translatable_input_key]
-              ));
-            }
-            return $violation_list;
-          }
-//
-//          $default_tree = $this->componentTreeLoader->load($default_entity);
-//          $default_item = $default_tree->getComponentTreeItemByUuid($component_instance_uuid);
-//          if ($default_item !== NULL) {
-//            foreach ($default_item->getInputs() ?? [] as $key => $value) {
-//              if (!\array_key_exists($key, $inputValues)) {
-//                $inputValues[$key] = $value;
-//              }
-//            }
-//          }
-//          else {
-//            // The 'tree' is being synced if default translation does not have
-//            // this item it means it was removed.
-//            // @todo Real solution is probably already have removed the item in.
-//            //   \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
-//            //   somewhere before this?
-//            return new ConstraintViolationList();
-//          }
-        }
-      }
-    }
-    return $this->doValidateComponentInput($inputValues, $component_instance_uuid, $entity);
   }
 
   /**
@@ -336,8 +272,6 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
   }
 
   abstract protected function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): array;
-
-  abstract protected function doValidateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface;
 
   protected function mergeDefaultExplicit(array $default_translation_explicit_input, array $explicit_input, ?FieldableEntityInterface $host_entity): array {
     return array_merge($default_translation_explicit_input, $explicit_input);
