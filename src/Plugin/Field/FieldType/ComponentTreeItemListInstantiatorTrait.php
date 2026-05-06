@@ -54,12 +54,7 @@ trait ComponentTreeItemListInstantiatorTrait {
     \assert(\method_exists($list_definition, 'setCardinality'));
     $list_definition->setCardinality(FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED);
     $item_list = $typed_data_manager->createInstance('list', [
-      // @todo adding this because in \Drupal\canvas\ComponentSource\ComponentSourceBase::getExplicitInputs()
-      //   I am unable to tell that this is from config entity because in ContentTemplate case $host_entity there will be the fieldable
-      //   entity that the template is rendering NOT the field entity like Page that field item is actually part of.
-      //   There should be a better way. I can't just call $item->getFieldDefinition()->getName() and check for NULL because that gives
-      //   a warning.
-      'name' => 'dangling_component_tree',
+      'name' => NULL,
       'parent' => $parent?->getTypedData(),
       'data_definition' => $list_definition,
     ]);

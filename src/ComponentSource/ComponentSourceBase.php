@@ -241,13 +241,12 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     if ($item === NULL) {
       return NULL;
     }
-    $field_name = $item->getParent()->getName();
-    // @todo see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemListInstantiatorTrait::staticallyCreateDanglingComponentTreeItemList
-    //   as to why this hacky check for `dangling_component_tree` is here right now.
-    //   How else would I know that $host_entity an entity that a ContentTemplate is rendering and that $item is not from a field on that entity but rather a "dangling" item.
-    //   In the case that it is ContentTemplate the inputs props have already
-    //   been merged by the config overrided system.
-    if ($field_name === 'dangling_component_tree') {
+    // If there is not a field name then this a component being rendered on a
+    // config entity. Even if $host_entity is not null it is not the entity
+    // which has the component tree field but rather the entity that a content
+    // template entity config entity is rendering.
+    // @see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemListInstantiatorTrait::staticallyCreateDanglingComponentTreeItemList()
+    if ($item->getParent()->getName() === NULL) {
       return NULL;
     }
     if ($host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
