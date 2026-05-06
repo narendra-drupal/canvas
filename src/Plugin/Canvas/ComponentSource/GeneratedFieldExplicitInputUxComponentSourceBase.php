@@ -730,7 +730,6 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
       // @see \Drupal\canvas\Plugin\Validation\Constraint\ComponentTreeStructureConstraintValidator
     }
     catch (InvalidComponentException $e) {
-
       // Deconstruct the multi-part exception message constructed by SDC.
       // @see \Drupal\Core\Theme\Component\ComponentValidator::validateProps()
       $errors = explode("\n", $e->getMessage());

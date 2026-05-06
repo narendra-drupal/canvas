@@ -715,6 +715,7 @@ class TranslationTest extends FunctionalTestBase {
     $updated_item = $list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
     \assert($updated_item instanceof ComponentTreeItem);
     $updated_item_inputs = $updated_item->getInputs();
+
     // In both the Symmetric and Asymmetric translation cases, the `inputs` and
     // `label` field properties are translatable and this should only change the
     // translation.

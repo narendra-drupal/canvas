@@ -625,7 +625,6 @@ class ComponentTreeItem extends FieldItemBase {
     if ($input_values === NULL && $source->requiresExplicitInput()) {
       throw new \LogicException(\sprintf('Missing input for component instance with UUID %s', $component_instance_uuid));
     }
-
     $this->optimizeInputs();
     // @todo Omit defaults that are stored at the content type template level, e.g. in core.entity_view_display.node.article.default.yml
     // $template_tree = '@todo';

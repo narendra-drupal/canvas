@@ -14,7 +14,6 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Validation\BasicRecursiveValidatorFactory;
 use Drupal\canvas\Attribute\ComponentSource;
 use Drupal\canvas\ComponentSource\ComponentSourceBase;
-use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\canvas\ComponentSource\ComponentSourceWithSlotsInterface;
 use Drupal\canvas\ComponentSource\ComponentSourceWithSwitchCasesInterface;
 use Drupal\canvas\Entity\Component;
@@ -67,9 +66,9 @@ final class Personalization extends ComponentSourceBase implements
     string $plugin_id,
     array $plugin_definition,
     private readonly BasicRecursiveValidatorFactory $validatorFactory,
-    ComponentTreeLoader $componentTreeLoader,
   ) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $componentTreeLoader);
+    \assert(\array_key_exists('local_source_id', $configuration));
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
 
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
@@ -78,7 +77,6 @@ final class Personalization extends ComponentSourceBase implements
       $plugin_id,
       $plugin_definition,
       $container->get(BasicRecursiveValidatorFactory::class),
-      $container->get(ComponentTreeLoader::class),
     );
   }
 

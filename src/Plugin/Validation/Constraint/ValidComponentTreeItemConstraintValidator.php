@@ -145,6 +145,8 @@ final class ValidComponentTreeItemConstraintValidator extends ConstraintValidato
     );
     if ($component_violations->count() > 0) {
       if ($is_non_default_translation) {
+        // Remove any violations for input properties not $translatable_keys, as
+        // those would be expected to be missing in a non-default translation.
         $base_path = \sprintf('%s.inputs.%s.', $this->context->getPropertyPath(), $value->getUuid());
         $translatable_property_paths = \array_map(
           function (string $translatable_key) use ($base_path) {
@@ -157,9 +159,6 @@ final class ValidComponentTreeItemConstraintValidator extends ConstraintValidato
             $component_violations->remove($key);
           }
         }
-        // @todo remove any violations for input properties not
-        //   $translatable_keys, as those would be expected to be missing in a
-        //   non-default translation.
       }
       // @todo Remove the foreach and use ::addAll once
       // https://www.drupal.org/project/drupal/issues/3490588 has been resolved.
