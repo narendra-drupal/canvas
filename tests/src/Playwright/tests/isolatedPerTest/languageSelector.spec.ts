@@ -173,8 +173,10 @@ test.describe('Language Selector', () => {
     await languageButton.click();
 
     const defaultLanguageItem = page
-      .locator('[role="menuitem"]:has-text("(Default)")')
+      .locator('[role="menuitem"]')
+      .filter({ hasText: /Default/ })
       .first();
+    await expect(defaultLanguageItem).toBeVisible();
     await defaultLanguageItem.click();
 
     await page.waitForURL(/\/editor\/canvas_page\/\d+/, { timeout: 10000 });
