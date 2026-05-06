@@ -144,6 +144,7 @@ subtyping
 supersets
 superstrongpassword
 SVAY
+targetable
 testid
 tmgmt
 toolset
@@ -157,9 +158,11 @@ ultrawide
 uncollapse
 uncollapsed
 uncollapses
+unhydrated
 unlayered
 unstorable
 unstub
+untampered
 unvalidatable
 upserting
 upserts

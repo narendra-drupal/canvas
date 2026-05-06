@@ -329,7 +329,7 @@ interface ComponentSourceInterface extends PluginInspectionInterface, Derivative
    * @return \Symfony\Component\Validator\ConstraintViolationListInterface
    *   Any violations.
    */
-  public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity, ?ComponentTreeItem $item): ConstraintViolationListInterface;
+  public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity, ?ComponentTreeItem $item = NULL): ConstraintViolationListInterface;
 
   /**
    * Checks if component meets requirements.
