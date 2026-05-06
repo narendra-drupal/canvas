@@ -217,26 +217,19 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
    * {@inheritdoc}
    */
   public function getExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
-    $default_translation = $this->getDefaultTranslationEntity($host_entity);
+    $default_translation = $this->getDefaultTranslationEntity($host_entity, $item);
     $default_translation_explicit_input = NULL;
     if ($default_translation) {
-      // @todo see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemListInstantiatorTrait::staticallyCreateDanglingComponentTreeItemList
-      //   as to why this hacky check for `dangling_component_tree` is here right now.
-      //   How else would I know that $host_entity an entity that a ContentTemplate is rendering and that $item is not from a field on that entity but rather a "dangling" item.
-      //   In the case that it is ContentTemplate the inputs props have already
-      //   been merged by the config overrided system.
       $field_name = $item->getParent()->getName();
-      if ($field_name !== 'dangling_component_tree') {
-        $default_component_tree = $default_translation->get($field_name);
-        \assert($default_component_tree instanceof ComponentTreeItemList);
-        $default_translation_item = $default_component_tree->getComponentTreeItemByUuid($uuid);
-        if ($default_translation_item) {
-          // The default translation has the component instance.
-          $default_translation_explicit_input = $this->doGetExplicitInput($uuid, $default_translation_item, $default_translation);
-        }
+      $default_component_tree = $default_translation->get($field_name);
+      \assert($default_component_tree instanceof ComponentTreeItemList);
+      $default_translation_item = $default_component_tree->getComponentTreeItemByUuid($uuid);
+      if ($default_translation_item) {
+        // The default translation has the component instance.
+        $default_translation_explicit_input = $this->doGetExplicitInput($uuid, $default_translation_item, $default_translation);
       }
-
     }
+
     $explicit_input = $this->doGetExplicitInput($uuid, $item, $host_entity);
     if ($default_translation_explicit_input) {
       $explicit_input = $this->mergeDefaultExplicit($default_translation_explicit_input, $explicit_input, $host_entity);
@@ -244,7 +237,19 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     return $explicit_input;
   }
 
-  protected function getDefaultTranslationEntity(?FieldableEntityInterface $host_entity): ?FieldableEntityInterface {
+  protected function getDefaultTranslationEntity(?FieldableEntityInterface $host_entity, ?ComponentTreeItem $item): ?FieldableEntityInterface {
+    if ($item === NULL) {
+      return NULL;
+    }
+    $field_name = $item->getParent()->getName();
+    // @todo see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemListInstantiatorTrait::staticallyCreateDanglingComponentTreeItemList
+    //   as to why this hacky check for `dangling_component_tree` is here right now.
+    //   How else would I know that $host_entity an entity that a ContentTemplate is rendering and that $item is not from a field on that entity but rather a "dangling" item.
+    //   In the case that it is ContentTemplate the inputs props have already
+    //   been merged by the config overrided system.
+    if ($field_name === 'dangling_component_tree') {
+      return NULL;
+    }
     if ($host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
       return $host_entity->getUntranslated();
     }

@@ -733,13 +733,10 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
       // Deconstruct the multi-part exception message constructed by SDC.
       // @see \Drupal\Core\Theme\Component\ComponentValidator::validateProps()
       $errors = explode("\n", $e->getMessage());
-      $is_non_default_translation = FALSE;
       $translatable_keys = [];
-      if ($entity && $item) {
-        $is_non_default_translation = $this->getDefaultTranslationEntity($entity) !== NULL;
-        if ($is_non_default_translation && $item->isTreeTranslationSynced() && !$item->isInputsTranslationSynced()) {
-          $translatable_keys = $item->get('inputs')->getTranslatableInputKeys();
-        }
+      $is_non_default_translation = $this->getDefaultTranslationEntity($entity, $item) !== NULL;
+      if ($is_non_default_translation && $item->isTreeTranslationSynced() && !$item->isInputsTranslationSynced()) {
+        $translatable_keys = $item->get('inputs')->getTranslatableInputKeys();
       }
 
 
