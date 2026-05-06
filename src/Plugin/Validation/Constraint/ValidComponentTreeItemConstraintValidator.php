@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Drupal\canvas\Plugin\Validation\Constraint;
 
 use Drupal\canvas\InvalidComponentInputsPropSourceException;
-use Drupal\canvas\Plugin\DataType\ComponentInputs;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\Plugin\DataType\ConfigEntityAdapter;
@@ -17,7 +16,6 @@ use Drupal\canvas\Validation\ConstraintPropertyPathTranslatorTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
-use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
 
 final class ValidComponentTreeItemConstraintValidator extends ConstraintValidator implements ContainerInjectionInterface {
@@ -148,14 +146,14 @@ final class ValidComponentTreeItemConstraintValidator extends ConstraintValidato
     if ($component_violations->count() > 0) {
       if ($is_non_default_translation) {
         $base_path = \sprintf('%s.inputs.%s.', $this->context->getPropertyPath(), $value->getUuid());
-        $translatable_property_paths = array_map(
+        $translatable_property_paths = \array_map(
           function (string $translatable_key) use ($base_path) {
             return $base_path . $translatable_key;
           },
           $translatable_keys
         );
         foreach ($component_violations as $key => $component_violation) {
-          if (!in_array($component_violation->getPropertyPath(), $translatable_property_paths, TRUE)) {
+          if (!\in_array($component_violation->getPropertyPath(), $translatable_property_paths, TRUE)) {
             $component_violations->remove($key);
           }
         }

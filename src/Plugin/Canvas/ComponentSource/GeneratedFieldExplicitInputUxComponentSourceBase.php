@@ -14,7 +14,6 @@ use Drupal\canvas\PropExpressions\StructuredData\EvaluationResult;
 use Drupal\canvas\PropExpressions\StructuredData\StructuredDataPropExpression;
 use Drupal\canvas\ShapeMatcher\PropSourceSuggester;
 use Drupal\canvas\PropSource\HostEntityUrlPropSource;
-use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\canvas\Utility\ComponentMetadataHelper;
 use Drupal\Component\Assertion\Inspector;
 use Drupal\Component\Plugin\DependentPluginInterface;
@@ -422,7 +421,9 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
     ];
   }
 
-  // @todo rename for translation
+  /**
+   * @todo rename for translation
+   */
   protected function mergeDefaultExplicit(array $default_translation_explicit_input, array $explicit_input, ?FieldableEntityInterface $host_entity): array {
     // Translations are never editin the Canvas UI(for now) so we only need resolved to
     // for render......
@@ -435,9 +436,9 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
         // translated component instances (using the well-established component
         // instance form), `source` will likely need to be pouplated for each
         // explicit input key ("SDC prop").
-//        if (!isset($explicit_input['source'][$prop])) {
-//          $explicit_input['source'][$prop] = InheritedFromDefaultTranslationBecauseSymmetricalPropSoruce;
-//        }
+        //        if (!isset($explicit_input['source'][$prop])) {
+        //          $explicit_input['source'][$prop] = InheritedFromDefaultTranslationBecauseSymmetricalPropSoruce;
+        //        }
       }
     }
     return $explicit_input;
@@ -739,7 +740,6 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
         $translatable_keys = $item->get('inputs')->getTranslatableInputKeys();
       }
 
-
       foreach ($errors as $error) {
         // An example error:
         // phpcs:disable Drupal.Files.LineLength.TooLong
@@ -759,7 +759,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
         if (\str_contains($prop_name, '/')) {
           [, $prop_name] = \explode('/', $prop_name);
         }
-        if ($is_non_default_translation && !in_array($prop_name, $translatable_keys, TRUE)) {
+        if ($is_non_default_translation && !\in_array($prop_name, $translatable_keys, TRUE)) {
           continue;
         }
         $violations->add(

@@ -732,4 +732,5 @@ class ComponentTreeItem extends FieldItemBase {
     //   somewhere before this?
     return \in_array($prop, $sync_props, TRUE);
   }
+
 }

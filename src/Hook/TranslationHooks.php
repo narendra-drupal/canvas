@@ -47,7 +47,7 @@ final class TranslationHooks {
       if ($input_values === NULL) {
         continue;
       }
-      $inputs_typed_data = $item  ->get('inputs');
+      $inputs_typed_data = $item->get('inputs');
       \assert($inputs_typed_data instanceof ComponentInputs);
       $translatable_keys = $inputs_typed_data->getTranslatableInputKeys();
       $item->setInput(\array_intersect_key($input_values, \array_flip($translatable_keys)));
