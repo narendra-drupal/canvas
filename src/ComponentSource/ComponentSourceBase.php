@@ -6,6 +6,7 @@ namespace Drupal\canvas\ComponentSource;
 
 use Drupal\canvas\Entity\Component;
 use Drupal\canvas\Plugin\DataType\ComponentInputs;
+use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
 use Drupal\canvas\Storage\ComponentTreeLoader;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\Schema\Mapping;
@@ -228,10 +229,10 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     $default_translation = $this->getDefaultTranslationEntity($host_entity);
     $default_translation_explicit_input = NULL;
     if ($default_translation) {
-      // @todo We don't actually need the tree loader here because $item can tell us the field name
-      //  the field name will always be the same on the defualt translation
-      //  config entities will never send $entity and get the input from config overrides
-      $default_translation_item = $this->componentTreeLoader->load($default_translation)->getComponentTreeItemByUuid($uuid);
+      $field_name = $item->getFieldDefinition()->getName();
+      $default_component_tree = $default_translation->get($field_name);
+      \assert($default_component_tree instanceof ComponentTreeItemList);
+      $default_translation_item = $default_component_tree->getComponentTreeItemByUuid($uuid);
       if ($default_translation_item) {
         // The default translation has the component instance.
         $default_translation_explicit_input = $this->doGetExplicitInput($uuid, $default_translation_item, $default_translation);
