@@ -86,7 +86,7 @@ test.describe('Language Selector', () => {
     const languageOptions = page.locator('[role="menuitem"]');
     const count = await languageOptions.count();
 
-    expect(count).toBeGreaterThan(2);
+    expect(count).toBe(3);
   });
 
   test('Preview URL includes language query parameter when accessing language translation', async ({
@@ -184,7 +184,7 @@ test.describe('Language Selector', () => {
     expect(currentUrl).not.toContain('?language=');
   });
 
-  test('Translation test page displays French content in preview', async ({
+  test('Translation test page displays French content and falls back to English for Spanish', async ({
     page,
     drupal,
     canvas,
@@ -213,10 +213,7 @@ test.describe('Language Selector', () => {
     await page.goto(`/canvas/editor/canvas_page/${pageId}`);
     await canvas.waitForEditorUi();
 
-    await expect(page.locator('text=Hello, Canvas!')).toBeVisible({
-      timeout: 5000,
-    });
-
+    // Switch to French language.
     const languageButton = page
       .locator('[data-testid="canvas-topbar"] button')
       .filter({ hasText: /English/ })
@@ -235,26 +232,27 @@ test.describe('Language Selector', () => {
       timeout: 10000,
     });
 
-    const previewUrl = page.url();
+    let previewUrl = page.url();
     expect(previewUrl).toContain(`language=fr`);
     expect(previewUrl).toContain(`/preview/canvas_page/${pageId}/full`);
 
-    const previewFrame = page.frameLocator('iframe[title="Page preview"]');
+    let previewFrame = page.frameLocator('iframe[title="Page preview"]');
     await expect(previewFrame.locator('body')).not.toBeEmpty();
 
+    // Verify French content "Bonjour, Canvas!" is displayed
     await expect(previewFrame.locator('text=Bonjour, Canvas!')).toBeVisible({
       timeout: 5000,
     });
 
+    // Verify English content is not displayed.
     await expect(previewFrame.locator('text=Hello, Canvas!')).not.toBeVisible();
 
-    const frameHtmlLang = await previewFrame
-      .locator('html')
-      .getAttribute('lang');
+    let frameHtmlLang = await previewFrame.locator('html').getAttribute('lang');
     if (frameHtmlLang) {
       expect(frameHtmlLang).toMatch(/^fr/i);
     }
 
+    // Switch to Spanish language (which has no translation).
     const frenchButton = page
       .locator('[data-testid="canvas-topbar"] button')
       .filter({ hasText: /French/ })
@@ -262,17 +260,37 @@ test.describe('Language Selector', () => {
     await expect(frenchButton).toBeVisible();
     await frenchButton.click();
 
-    const englishOption = page
-      .locator('[role="menuitem"]:has-text("(Default)")')
+    const spanishOption = page
+      .locator('[role="menuitem"]')
+      .filter({ hasText: /Spanish/ })
       .first();
-    await englishOption.click();
+    await expect(spanishOption).toBeVisible();
+    await spanishOption.click();
 
-    await page.waitForURL(/\/editor\/canvas_page\//, { timeout: 10000 });
-    const editorUrl = page.url();
-    expect(editorUrl).not.toContain('?language=');
+    await page.waitForURL(/\/preview\/canvas_page\/\d+\/full\?language=es/, {
+      timeout: 10000,
+    });
 
-    await expect(page.locator('text=Hello, Canvas!')).toBeVisible({
+    previewUrl = page.url();
+    expect(previewUrl).toContain(`language=es`);
+    expect(previewUrl).toContain(`/preview/canvas_page/${pageId}/full`);
+
+    previewFrame = page.frameLocator('iframe[title="Page preview"]');
+    await expect(previewFrame.locator('body')).not.toBeEmpty();
+
+    // Verify English content "Hello, Canvas!" is displayed (fallback).
+    await expect(previewFrame.locator('text=Hello, Canvas!')).toBeVisible({
       timeout: 5000,
     });
+
+    // Verify French content is not displayed.
+    await expect(
+      previewFrame.locator('text=Bonjour, Canvas!'),
+    ).not.toBeVisible();
+
+    frameHtmlLang = await previewFrame.locator('html').getAttribute('lang');
+    if (frameHtmlLang) {
+      expect(frameHtmlLang).toMatch(/^es/i);
+    }
   });
 });
