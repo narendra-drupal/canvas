@@ -593,7 +593,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
   /**
    * {@inheritdoc}
    */
-  public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity, ?ComponentTreeItem $item = NULL): ConstraintViolationListInterface {
+  public function validateComponentInput(array $inputValues, string $component_instance_uuid, ?FieldableEntityInterface $entity): ConstraintViolationListInterface {
     $violations = new ConstraintViolationList();
     $prop_field_definitions = $this->configuration['prop_field_definitions'];
 
@@ -733,11 +733,6 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
       // Deconstruct the multi-part exception message constructed by SDC.
       // @see \Drupal\Core\Theme\Component\ComponentValidator::validateProps()
       $errors = explode("\n", $e->getMessage());
-      $translatable_keys = [];
-      $is_non_default_translation = $this->getDefaultTranslationEntity($entity, $item) !== NULL;
-      if ($is_non_default_translation && $item->isTreeTranslationSynced() && !$item->isInputsTranslationSynced()) {
-        $translatable_keys = $item->get('inputs')->getTranslatableInputKeys();
-      }
 
       foreach ($errors as $error) {
         // An example error:
@@ -757,9 +752,6 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
 
         if (\str_contains($prop_name, '/')) {
           [, $prop_name] = \explode('/', $prop_name);
-        }
-        if ($is_non_default_translation && !\in_array($prop_name, $translatable_keys, TRUE)) {
-          continue;
         }
         $violations->add(
           new ConstraintViolation(

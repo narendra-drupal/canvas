@@ -12,6 +12,7 @@ use Drupal\content_translation\FieldTranslationSynchronizerInterface;
 use Drupal\Core\Block\MessagesBlockPluginInterface;
 use Drupal\Core\Block\TitleBlockPluginInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 use Drupal\Core\Field\Attribute\FieldType;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -601,8 +602,28 @@ class ComponentTreeItem extends FieldItemBase {
     // this will catch that.
     // @see \Drupal\canvas\Plugin\Validation\Constraint\ValidComponentTreeItemConstraintValidator
     $input_values = $this->getInputs();
-    $component_violations = $source->validateComponentInput($input_values ?? [], $component_instance_uuid, $entity, $this);
+    $component_violations = $source->validateComponentInput($input_values ?? [], $component_instance_uuid, $entity);
     if ($component_violations->count() > 0) {
+      if ($entity instanceof FieldableEntityInterface && $entity instanceof TranslatableInterface && $entity->isTranslatable() && !$entity->isDefaultTranslation() && $this->isTreeTranslationSynced() && !$this->isInputsTranslationSynced()) {
+        // Remove any violations for input properties not $translatable_keys, as
+        // those would be expected to be missing in a non-default translation.
+        // @todo this logic is very similar to new logic
+        //   ValidComponentTreeItemConstraintValidator::validate() could they
+        //   share a trait?
+        $base_path = \sprintf('inputs.%s.', $this->getUuid());
+        $translatable_property_paths = \array_map(
+          function (string $translatable_key) use ($base_path) {
+            return $base_path . $translatable_key;
+          },
+          $this->get('inputs')->getTranslatableInputKeys()
+        );
+        foreach ($component_violations as $key => $component_violation) {
+          if (!\in_array($component_violation->getPropertyPath(), $translatable_property_paths, TRUE)) {
+            $component_violations->remove($key);
+          }
+        }
+      }
+
       // @todo Remove the foreach and use ::addAll once
       // https://www.drupal.org/project/drupal/issues/3490588 has been resolved.
       foreach ($component_violations as $violation) {
