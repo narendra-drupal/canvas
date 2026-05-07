@@ -9,12 +9,7 @@ import { isolatedPerTest as test } from '../../fixtures/test.js';
  */
 
 test.use({
-  modules: [
-    'canvas_test_sdc',
-    'language',
-    'content_translation',
-    'canvas_test_translation',
-  ],
+  modules: ['canvas_test_sdc', 'language', 'content_translation'],
   enableTestExtensions: true,
 });
 
@@ -30,6 +25,7 @@ test.describe('Language Selector', () => {
       userAgent: drupalSite.userAgent,
     });
 
+    // Add Spanish language.
     await execDrush('language:add es', {
       url: drupalSite.url,
       userAgent: drupalSite.userAgent,
@@ -45,15 +41,13 @@ test.describe('Language Selector', () => {
     );
 
     // Enable canvas_dev_translation module.
-    await execDrush('pm:enable canvas_dev_translation', {
-      url: drupalSite.url,
-      userAgent: drupalSite.userAgent,
-    });
-
-    await execDrush('cache:rebuild', {
-      url: drupalSite.url,
-      userAgent: drupalSite.userAgent,
-    });
+    await execDrush(
+      'pm:enable canvas_dev_translation canvas_test_translation',
+      {
+        url: drupalSite.url,
+        userAgent: drupalSite.userAgent,
+      },
+    );
 
     await drupal.loginAsAdmin();
   });
