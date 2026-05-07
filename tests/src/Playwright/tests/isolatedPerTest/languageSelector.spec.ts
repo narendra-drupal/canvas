@@ -9,7 +9,12 @@ import { isolatedPerTest as test } from '../../fixtures/test.js';
  */
 
 test.use({
-  modules: ['canvas_test_sdc', 'language', 'content_translation'],
+  modules: [
+    'canvas_test_sdc',
+    'language',
+    'content_translation',
+    'canvas_test_transaltion',
+  ],
   enableTestExtensions: true,
 });
 
@@ -193,7 +198,7 @@ test.describe('Language Selector', () => {
   }) => {
     const drupalSite = drupal.drupalSite;
 
-    // Get the ID of the pre-created translation test page from canvas_dev_translation.install.
+    // Get the ID of the pre-created translation test page from canvas_test_translation.install.
     const getPageIdCommand = `php-eval "
       \\$pages = \\Drupal::entityTypeManager()
         ->getStorage('canvas_page')

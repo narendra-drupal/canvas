@@ -1,11 +1,8 @@
 name: Drupal Canvas dev translation
-description: 'Enables translation features for Canvas - useful for testing translation scenarios, but NOT intended for production use when enable a non-complete and broken feature'
+description: 'Enables translation features for Canvas - useful for testing translation scenarios'
 core_version_requirement: ^11
 hidden: true
 type: module
 package: Drupal Canvas
 dependencies:
   - canvas:canvas
-  - canvas:canvas_test_sdc
-  - drupal:language
-  - drupal:content_translation
