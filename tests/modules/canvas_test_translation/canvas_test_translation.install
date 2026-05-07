@@ -117,7 +117,7 @@ function canvas_test_translation_modules_installed(array $modules): void {
   $region_override = $language_manager->getLanguageConfigOverride('fr', $region->getConfigDependencyName());
   $region_override->setData([
     'component_tree' => [
-      0 => [
+      '33333333-3333-4333-8333-333333333333' => [
         'label' => 'French region heading',
         'inputs' => ['text' => 'Bonjour de la région'],
       ],
@@ -169,7 +169,7 @@ function canvas_test_translation_modules_installed(array $modules): void {
   $override = $language_manager->getLanguageConfigOverride('fr', $template->getConfigDependencyName());
   $override->setData([
     'component_tree' => [
-      0 => [
+      '22222222-2222-4222-8222-222222222222' => [
         'label' => 'French template heading',
         'inputs' => ['text' => 'Bonjour du template'],
       ],
