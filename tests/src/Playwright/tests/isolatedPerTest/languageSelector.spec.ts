@@ -3,6 +3,7 @@ import { expect } from '@playwright/test';
 
 import { isolatedPerTest as test } from '../../fixtures/test.js';
 
+// cspell:ignore région
 /**
  * Tests for the Language Selector component.
  * Tests language switching functionality and URL query parameters.
