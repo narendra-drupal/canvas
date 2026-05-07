@@ -439,17 +439,24 @@ class TranslationTest extends FunctionalTestBase {
   }
 
   /**
-   * Tests that the layout API returns translated content from language-prefixed routes when canvas_dev_translation is enabled.
+   * Tests that the layout API returns translated content from language-prefixed routes when canvas_test_translation is enabled.
    *
    * @todo This might just be temporary test until we have a Playwright test
    *    that test this functionality with the translation preview.
    */
   public function testCanvasDevTranslationLayoutApi(): void {
+    $existing_template = ContentTemplate::load('node.article.full');
+    if ($existing_template instanceof ContentTemplate) {
+      $existing_template->delete();
+    }
+
+    // Install canvas_test_translation to get the canvas_page and
+    // ContentTemplate entities with French translations created in
+    // hook_modules_installed().
     $module_installer = $this->container->get(ModuleInstallerInterface::class);
-    $module_installer->install(['canvas_dev_translation']);
+    $module_installer->install(['canvas_test_translation']);
     $this->rebuildContainer();
 
-    // Load the canvas_page created by canvas_dev_translation hook_install().
     $pages = $this->container->get('entity_type.manager')
       ->getStorage('canvas_page')
       ->loadByProperties(['title' => 'Canvas Translation Test Page']);
