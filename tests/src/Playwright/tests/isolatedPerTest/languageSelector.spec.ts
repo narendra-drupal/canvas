@@ -13,7 +13,7 @@ test.use({
     'canvas_test_sdc',
     'language',
     'content_translation',
-    'canvas_test_transaltion',
+    'canvas_test_translation',
   ],
   enableTestExtensions: true,
 });
