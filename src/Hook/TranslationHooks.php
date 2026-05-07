@@ -38,10 +38,10 @@ final class TranslationHooks {
     catch (\LogicException) {
       return;
     }
-    if (!$component_tree_item_list->isTreeTranslationSynced() || $component_tree_item_list->isInputsTranslationSynced()) {
-      return;
-    }
     foreach ($component_tree_item_list as $item) {
+      if (!$item->isTreeTranslationSynced() || $item->isInputsTranslationSynced()) {
+        return;
+      }
       \assert($item instanceof ComponentTreeItem);
       $input_values = $item->getInputs();
       if ($input_values === NULL) {
