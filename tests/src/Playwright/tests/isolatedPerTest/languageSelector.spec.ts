@@ -169,7 +169,14 @@ test.describe('Language Selector', () => {
       .locator('[data-testid="canvas-topbar"] button')
       .filter({ hasText: /French/ })
       .first();
+    await expect(languageButton).toBeVisible();
     await languageButton.click();
+
+    // Wait for the dropdown menu to open.
+    await page.waitForSelector('[role="menuitem"]', {
+      state: 'visible',
+      timeout: 5000,
+    });
 
     const defaultLanguageItem = page
       .locator('[role="menuitem"]')
@@ -240,18 +247,27 @@ test.describe('Language Selector', () => {
     let previewFrame = page.frameLocator('iframe[title="Page preview"]');
     await expect(previewFrame.locator('body')).not.toBeEmpty();
 
-    // Verify French content "Bonjour, Canvas!" is displayed
+    // Verify French page content "Bonjour, Canvas!" is displayed.
     await expect(previewFrame.locator('text=Bonjour, Canvas!')).toBeVisible({
       timeout: 5000,
     });
 
+    // Verify French page region content "Bonjour de la région" is displayed.
+    await expect(previewFrame.locator('text=Bonjour de la région')).toBeVisible(
+      {
+        timeout: 5000,
+      },
+    );
+
     // Verify English content is not displayed.
     await expect(previewFrame.locator('text=Hello, Canvas!')).not.toBeVisible();
+    await expect(
+      previewFrame.locator('text=Hello from region'),
+    ).not.toBeVisible();
 
+    // Verify page region is in French.
     let frameHtmlLang = await previewFrame.locator('html').getAttribute('lang');
-    if (frameHtmlLang) {
-      expect(frameHtmlLang).toMatch(/^fr/i);
-    }
+    expect(frameHtmlLang).toMatch(/^fr/i);
 
     // Switch to Spanish language (which has no translation).
     const frenchButton = page
@@ -279,8 +295,13 @@ test.describe('Language Selector', () => {
     previewFrame = page.frameLocator('iframe[title="Page preview"]');
     await expect(previewFrame.locator('body')).not.toBeEmpty();
 
-    // Verify English content "Hello, Canvas!" is displayed (fallback).
+    // Verify English page content "Hello, Canvas!" is displayed (fallback).
     await expect(previewFrame.locator('text=Hello, Canvas!')).toBeVisible({
+      timeout: 5000,
+    });
+
+    // Verify English page region content "Hello from region" is displayed (fallback).
+    await expect(previewFrame.locator('text=Hello from region')).toBeVisible({
       timeout: 5000,
     });
 
@@ -288,10 +309,12 @@ test.describe('Language Selector', () => {
     await expect(
       previewFrame.locator('text=Bonjour, Canvas!'),
     ).not.toBeVisible();
+    await expect(
+      previewFrame.locator('text=Bonjour de la région'),
+    ).not.toBeVisible();
 
+    // Verify page region is in Spanish.
     frameHtmlLang = await previewFrame.locator('html').getAttribute('lang');
-    if (frameHtmlLang) {
-      expect(frameHtmlLang).toMatch(/^es/i);
-    }
+    expect(frameHtmlLang).toMatch(/^es/i);
   });
 });
