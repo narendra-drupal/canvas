@@ -459,11 +459,12 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
   }
 
   /**
-   * Gets explicit input merged with defaults from the default translation.
+   * Merges explicit input with defaults from the default translation.
+   *
+   * @param array $explicit_input
+   *   Already-fetched explicit input for the item (current translation).
    */
-  private function mergeExplicitInputWithDefaultTranslation(ComponentSourceInterface $source, string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): array {
-    $explicit_input = $source->getExplicitInput($uuid, $item, $host_entity);
-
+  public static function mergeWithDefaultTranslation(ComponentSourceInterface $source, string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity, array $explicit_input): array {
     // If there is not a field name then this is a component being rendered on
     // a config entity — skip merging.
     // @see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemListInstantiatorTrait::staticallyCreateDanglingComponentTreeItemList()
@@ -485,6 +486,10 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
       }
     }
     return $explicit_input;
+  }
+
+  private function mergeExplicitInputWithDefaultTranslation(ComponentSourceInterface $source, string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): array {
+    return self::mergeWithDefaultTranslation($source, $uuid, $item, $host_entity, $source->getExplicitInput($uuid, $item, $host_entity));
   }
 
   private function getHydratedValue(): array {

@@ -9,7 +9,6 @@ use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\Schema\Mapping;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 use Drupal\Core\Plugin\ContextAwarePluginTrait;
 use Drupal\Core\Plugin\PluginBase;
@@ -188,24 +187,7 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
    * {@inheritdoc}
    */
   public function getResolvedExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
-    $explicit_input = $this->getExplicitInput($uuid, $item, $host_entity);
-    // Merge non-translatable inputs from the default translation so that
-    // callers get a fully populated result for non-default translations.
-    if (
-      $item->getParent()->getName() !== NULL
-      && $host_entity instanceof TranslatableInterface
-      && $host_entity->isTranslatable()
-      && !$host_entity->isDefaultTranslation()
-    ) {
-      $default_translation = $host_entity->getUntranslated();
-      $default_tree = $default_translation->get($item->getParent()->getName());
-      \assert($default_tree instanceof ComponentTreeItemList);
-      $default_item = $default_tree->getComponentTreeItemByUuid($uuid);
-      if ($default_item) {
-        $default_input = $this->getExplicitInput($uuid, $default_item, $default_translation);
-        $explicit_input = $this->mergeExplicitInputWithDefault($default_input, $explicit_input);
-      }
-    }
+    $explicit_input = ComponentTreeItemList::mergeWithDefaultTranslation($this, $uuid, $item, $host_entity, $this->getExplicitInput($uuid, $item, $host_entity));
     $component = $item->getComponent();
     \assert($component instanceof Component);
     $required_props_with_default_values_in_current_implementation = $component
