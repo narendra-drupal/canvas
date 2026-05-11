@@ -25,6 +25,10 @@ final class ApiLanguageController {
    * Returns a list of configurable languages set up on the site.
    */
   public function list(): CacheableJsonResponse {
+    // STATE_CONFIGURABLE excludes locked system placeholders (und/zxx) and
+    // returns only languages visible at /admin/config/regional/language —
+    // the only languages with URL prefixes a user can preview content in.
+    // @see \Drupal\language\ConfigurableLanguageManager::isMultilingual()
     $languages = $this->languageManager->getLanguages(LanguageInterface::STATE_CONFIGURABLE);
 
     $data = [];
