@@ -161,6 +161,12 @@ interface ComponentSourceInterface extends PluginInspectionInterface, Derivative
   /**
    * Retrieves the component instance's explicit (possibly empty) input.
    *
+   * Returns only the values actually stored for this component instance.
+   * For non-default translations this means only the translatable inputs are
+   * present; callers that need a fully populated result should use
+   * ::getResolvedExplicitInput() or
+   * ComponentTreeItemList::mergeWithDefaultTranslation().
+   *
    * @param \Drupal\Core\Entity\FieldableEntityInterface|null $host_entity
    *   Host entity. Required when a component instance has inputs populated by
    *   EntityFieldPropSources AND the parent entity of $item is not the host
