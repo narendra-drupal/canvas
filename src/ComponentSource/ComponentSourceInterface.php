@@ -188,6 +188,14 @@ interface ComponentSourceInterface extends PluginInspectionInterface, Derivative
   public function getResolvedExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array;
 
   /**
+   * Merges default-translation explicit input with a non-default translation's.
+   *
+   * Sources that return structured input (e.g. with 'resolved'/'source' keys)
+   * must override this to merge per-prop rather than per-key.
+   */
+  public function mergeExplicitInputWithDefault(array $default_explicit_input, array $explicit_input): array;
+
+  /**
    * Hydrates a component with its explicit input plus slots (if any).
    *
    * Note that the result contains the default slot value, because this method

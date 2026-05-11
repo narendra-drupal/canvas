@@ -13,6 +13,7 @@ use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Field\FieldItemList;
 use Drupal\Core\Form\EnforcedResponseException;
 use Drupal\Core\Form\FormAjaxException;
@@ -104,7 +105,7 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
       $source = $item->getComponent()?->getComponentSource();
       \assert($source instanceof ComponentSourceInterface);
       if ($source->requiresExplicitInput()) {
-        $built['model'][$component_instance_uuid] = $source->inputToClientModel($source->getExplicitInput($component_instance_uuid, $item, $host_entity));
+        $built['model'][$component_instance_uuid] = $source->inputToClientModel($this->mergeExplicitInputWithDefaultTranslation($source, $component_instance_uuid, $item, $host_entity));
       }
 
       // TRICKY: the server-side implementation (for storage efficiency) forbids
@@ -457,6 +458,35 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
     }
   }
 
+  /**
+   * Gets explicit input merged with defaults from the default translation.
+   */
+  private function mergeExplicitInputWithDefaultTranslation(ComponentSourceInterface $source, string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): array {
+    $explicit_input = $source->getExplicitInput($uuid, $item, $host_entity);
+
+    // If there is not a field name then this is a component being rendered on
+    // a config entity — skip merging.
+    // @see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemListInstantiatorTrait::staticallyCreateDanglingComponentTreeItemList()
+    if (
+      $item->getParent()->getName() !== NULL
+      && $host_entity instanceof TranslatableInterface
+      && $host_entity->isTranslatable()
+      && !$host_entity->isDefaultTranslation()
+    ) {
+      $default_translation = $host_entity->getUntranslated();
+      $field_name = $item->getParent()->getName();
+      $default_component_tree = $default_translation->get($field_name);
+      \assert($default_component_tree instanceof self);
+      $default_item = $default_component_tree->getComponentTreeItemByUuid($uuid);
+      if ($default_item) {
+        $default_input = $source->getExplicitInput($uuid, $default_item, $default_translation);
+        // Current translation values override defaults for translatable props.
+        $explicit_input = $source->mergeExplicitInputWithDefault($default_input, $explicit_input);
+      }
+    }
+    return $explicit_input;
+  }
+
   private function getHydratedValue(): array {
     $hydrated = [];
 
@@ -494,7 +524,7 @@ final class ComponentTreeItemList extends FieldItemList implements RenderableInt
         }
       }
       try {
-        $explicit_input = $source->getExplicitInput($uuid, $item, $parent_entity);
+        $explicit_input = $this->mergeExplicitInputWithDefaultTranslation($source, $uuid, $item, $parent_entity);
       }
       catch (\Throwable $e) {
         $hydrated[$uuid] = [

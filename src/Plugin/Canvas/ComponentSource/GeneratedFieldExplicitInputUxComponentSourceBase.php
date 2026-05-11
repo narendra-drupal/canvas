@@ -351,7 +351,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
   /**
    * {@inheritdoc}
    */
-  protected function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
+  public function getExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
     if (!$this->requiresExplicitInput()) {
       return [
         'resolved' => [],
@@ -422,23 +422,19 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
   }
 
   /**
-   * @todo rename for translation
+   * {@inheritdoc}
    */
-  protected function mergeDefaultExplicit(array $default_translation_explicit_input, array $explicit_input, ?FieldableEntityInterface $host_entity): array {
-    // Translations are never editin the Canvas UI(for now) so we only need resolved to
-    // for render......
-    if (isset($default_translation_explicit_input['resolved'])) {
-      foreach ($default_translation_explicit_input['resolved'] as $prop => $resolved_value) {
+  public function mergeExplicitInputWithDefault(array $default_explicit_input, array $explicit_input): array {
+    // Inputs are structured as ['resolved' => [...], 'source' => [...]].
+    // Merge per-prop within 'resolved' so non-translatable props from the
+    // default translation fill in any gaps in the non-default translation.
+    // @todo If/when Canvas' UI gains the ability to edit symmetrically
+    //   translated component instances, 'source' will also need per-prop merge.
+    if (isset($default_explicit_input['resolved'])) {
+      foreach ($default_explicit_input['resolved'] as $prop => $resolved_value) {
         if (!isset($explicit_input['resolved'][$prop])) {
-          $explicit_input['resolved'][$prop] = $default_translation_explicit_input['resolved'][$prop];
+          $explicit_input['resolved'][$prop] = $resolved_value;
         }
-        // @todo If/when Canvas' UI gains the ability to edit symmetrically
-        // translated component instances (using the well-established component
-        // instance form), `source` will likely need to be pouplated for each
-        // explicit input key ("SDC prop").
-        //        if (!isset($explicit_input['source'][$prop])) {
-        //          $explicit_input['source'][$prop] = InheritedFromDefaultTranslationBecauseSymmetricalPropSoruce;
-        //        }
       }
     }
     return $explicit_input;

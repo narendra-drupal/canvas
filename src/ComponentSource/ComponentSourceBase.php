@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Drupal\canvas\ComponentSource;
 
 use Drupal\canvas\Entity\Component;
-use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\Schema\Mapping;
 use Drupal\Core\Config\TypedConfigManagerInterface;
@@ -15,6 +14,7 @@ use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 use Drupal\Core\Plugin\ContextAwarePluginTrait;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
+use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
 
 /**
  * @internal
@@ -189,6 +189,23 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
    */
   public function getResolvedExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
     $explicit_input = $this->getExplicitInput($uuid, $item, $host_entity);
+    // Merge non-translatable inputs from the default translation so that
+    // callers get a fully populated result for non-default translations.
+    if (
+      $item->getParent()->getName() !== NULL
+      && $host_entity instanceof TranslatableInterface
+      && $host_entity->isTranslatable()
+      && !$host_entity->isDefaultTranslation()
+    ) {
+      $default_translation = $host_entity->getUntranslated();
+      $default_tree = $default_translation->get($item->getParent()->getName());
+      \assert($default_tree instanceof ComponentTreeItemList);
+      $default_item = $default_tree->getComponentTreeItemByUuid($uuid);
+      if ($default_item) {
+        $default_input = $this->getExplicitInput($uuid, $default_item, $default_translation);
+        $explicit_input = $this->mergeExplicitInputWithDefault($default_input, $explicit_input);
+      }
+    }
     $component = $item->getComponent();
     \assert($component instanceof Component);
     $required_props_with_default_values_in_current_implementation = $component
@@ -211,43 +228,8 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
   /**
    * {@inheritdoc}
    */
-  public function getExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
-    $default_translation = $this->getDefaultTranslationEntity($host_entity, $item);
-    $default_translation_explicit_input = NULL;
-    if ($default_translation) {
-      $field_name = $item->getParent()->getName();
-      $default_component_tree = $default_translation->get($field_name);
-      \assert($default_component_tree instanceof ComponentTreeItemList);
-      $default_translation_item = $default_component_tree->getComponentTreeItemByUuid($uuid);
-      if ($default_translation_item) {
-        // The default translation has the component instance.
-        $default_translation_explicit_input = $this->doGetExplicitInput($uuid, $default_translation_item, $default_translation);
-      }
-    }
-
-    $explicit_input = $this->doGetExplicitInput($uuid, $item, $host_entity);
-    if ($default_translation_explicit_input) {
-      $explicit_input = $this->mergeDefaultExplicit($default_translation_explicit_input, $explicit_input, $host_entity);
-    }
-    return $explicit_input;
-  }
-
-  protected function getDefaultTranslationEntity(?FieldableEntityInterface $host_entity, ?ComponentTreeItem $item): ?FieldableEntityInterface {
-    if ($item === NULL) {
-      return NULL;
-    }
-    // If there is not a field name then this a component being rendered on a
-    // config entity. Even if $host_entity is not null it is not the entity
-    // which has the component tree field but rather the entity that a content
-    // template entity config entity is rendering.
-    // @see \Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemListInstantiatorTrait::staticallyCreateDanglingComponentTreeItemList()
-    if ($item->getParent()->getName() === NULL) {
-      return NULL;
-    }
-    if ($host_entity instanceof TranslatableInterface && $host_entity->isTranslatable() && !$host_entity->isDefaultTranslation()) {
-      return $host_entity->getUntranslated();
-    }
-    return NULL;
+  public function mergeExplicitInputWithDefault(array $default_explicit_input, array $explicit_input): array {
+    return array_merge($default_explicit_input, $explicit_input);
   }
 
   /**
@@ -268,12 +250,6 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
     \assert($discovery instanceof ComponentCandidatesDiscoveryInterface);
 
     $discovery->checkRequirements($this->getSourceSpecificComponentId());
-  }
-
-  abstract protected function doGetExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity): array;
-
-  protected function mergeDefaultExplicit(array $default_translation_explicit_input, array $explicit_input, ?FieldableEntityInterface $host_entity): array {
-    return array_merge($default_translation_explicit_input, $explicit_input);
   }
 
 }
