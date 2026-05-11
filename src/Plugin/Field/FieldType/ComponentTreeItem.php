@@ -6,6 +6,7 @@ namespace Drupal\canvas\Plugin\Field\FieldType;
 
 use Drupal\canvas\Entity\ComponentTreeEntityInterface;
 use Drupal\canvas\PropSource\PropSource;
+use Drupal\canvas\Validation\ConstraintPropertyPathTranslatorTrait;
 use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\content_translation\FieldTranslationSynchronizerInterface;
@@ -126,6 +127,7 @@ class ComponentTreeItem extends FieldItemBase {
   public const string VIOLATION_CODE_GARBAGE_INPUT = 'garbage';
 
   use ComponentTreeItemListInstantiatorTrait;
+  use ConstraintPropertyPathTranslatorTrait;
 
   // phpcs:disable Drupal.Commenting.DataTypeNamespace.DataTypeNamespace
   /**
@@ -582,7 +584,6 @@ class ComponentTreeItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function preSave(): void {
-    $entity = $this->getRoot() === $this ? NULL : $this->getEntity();
     $violations = new ConstraintViolationList();
     $source = $this->getComponent()?->getComponentSource();
     $component_instance_uuid = $this->getUuid();
@@ -601,32 +602,16 @@ class ComponentTreeItem extends FieldItemBase {
     // field are saved. When a field is saved that somehow was not validated,
     // this will catch that.
     // @see \Drupal\canvas\Plugin\Validation\Constraint\ValidComponentTreeItemConstraintValidator
-    $input_values = $this->getInputs();
-    $component_violations = $source->validateComponentInput($input_values ?? [], $component_instance_uuid, $entity);
+    $component_violations = $this->validate();
     if ($component_violations->count() > 0) {
-      if ($entity instanceof FieldableEntityInterface && $entity instanceof TranslatableInterface && $entity->isTranslatable() && !$entity->isDefaultTranslation() && $this->isTreeTranslationSynced() && !$this->isInputsTranslationSynced()) {
-        // Remove any violations for input properties not $translatable_keys, as
-        // those would be expected to be missing in a non-default translation.
-        // @todo this logic is very similar to new logic
-        //   ValidComponentTreeItemConstraintValidator::validate() could they
-        //   share a trait?
-        $base_path = \sprintf('inputs.%s.', $this->getUuid());
-        $translatable_property_paths = \array_map(
-          function (string $translatable_key) use ($base_path) {
-            return $base_path . $translatable_key;
-          },
-          $this->get('inputs')->getTranslatableInputKeys()
-        );
-        foreach ($component_violations as $key => $component_violation) {
-          if (!\in_array($component_violation->getPropertyPath(), $translatable_property_paths, TRUE)) {
-            $component_violations->remove($key);
-          }
-        }
-      }
-
+      $this->translateConstraintPropertyPathsAndRoot(
+        ['inputs.' => sprintf('field_canvas_test.inputs.%s.', $this->getUuid())],
+        $component_violations,
+      );
       // @todo Remove the foreach and use ::addAll once
       // https://www.drupal.org/project/drupal/issues/3490588 has been resolved.
       foreach ($component_violations as $violation) {
+
         $violations->add($violation);
       }
     }
@@ -638,13 +623,6 @@ class ComponentTreeItem extends FieldItemBase {
           )
         )
       );
-    }
-
-    // This *internal-only* validation does not need to happen using validation
-    // constraints because it does not validate user input: it only helps ensure
-    // that the logic of this field type is correct.
-    if ($input_values === NULL && $source->requiresExplicitInput()) {
-      throw new \LogicException(\sprintf('Missing input for component instance with UUID %s', $component_instance_uuid));
     }
     $this->optimizeInputs();
     // @todo Omit defaults that are stored at the content type template level, e.g. in core.entity_view_display.node.article.default.yml

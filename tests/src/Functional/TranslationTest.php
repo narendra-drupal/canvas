@@ -10,6 +10,7 @@ use Drupal\canvas\Entity\Component;
 use Drupal\canvas\Entity\ContentTemplate;
 use Drupal\canvas\Entity\Page;
 use Drupal\canvas\PropSource\PropSource;
+use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\language\ConfigurableLanguageManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -628,6 +629,15 @@ class TranslationTest extends FunctionalTestBase {
       ],
     ]);
     self::assertSame(['field_canvas_test.0.inputs.target' => 'non-translatable keys are not allow in translation'], self::violationsToArray($translation->validate()));
+
+    // Ensure saving directly also produces an exception.
+    try {
+      $translation->save();
+      $this->fail('Expected to fail.');
+    }
+    catch (EntityStorageException $e) {
+      self::assertSame('field_canvas_test.inputs.a1b2c3d4-e5f6-7890-abcd-ef1234567890.target: non-translatable keys are not allow in translation', $e->getMessage());
+    }
 
     // Remove 'target' leaving only translatable properties.
     $translation->set('field_canvas_test', [
