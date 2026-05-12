@@ -93,7 +93,6 @@ export const previewApi = createApi({
       {
         entityType: string;
         entityId: string;
-        languageCode: string;
       }
     >({
       query: ({ entityType, entityId }) => ({

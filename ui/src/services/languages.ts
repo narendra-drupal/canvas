@@ -12,9 +12,11 @@ export interface Language {
 export const languagesApi = createApi({
   reducerPath: 'languagesApi',
   baseQuery,
+  tagTypes: ['Languages'],
   endpoints: (builder) => ({
     getLanguages: builder.query<Language[], void>({
       query: () => '/canvas/api/v0/languages',
+      providesTags: () => [{ type: 'Languages', id: 'LIST' }],
     }),
   }),
 });
