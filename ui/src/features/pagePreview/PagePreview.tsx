@@ -55,7 +55,6 @@ const PagePreview = () => {
           await getLanguagePreview({
             entityType,
             entityId,
-            languageCode: locationState.language,
           }).unwrap();
         } else {
           // For normal preview, use POST with current edits.
