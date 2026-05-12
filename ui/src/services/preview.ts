@@ -14,6 +14,10 @@ import { handleAutoSavesHashUpdate } from '@/utils/autoSaves';
 
 import type { RootState } from '@/app/store';
 import type {
+  ComponentModels,
+  RegionNode,
+} from '@/features/layout/layoutModelSlice';
+import type {
   ComponentModel,
   EvaluatedComponentModel,
   PropSource,
@@ -26,8 +30,8 @@ import type { InputUIData } from '@/types/Form';
 
 export type UpdateComponentResultType = {
   html: string;
-  layout: any;
-  model: any;
+  layout: RegionNode[];
+  model: ComponentModels;
   autoSaves: AutoSavesHash;
   errors?: Array<ConflictError>;
 };
@@ -48,8 +52,8 @@ export const previewApi = createApi({
       {
         entityType: string;
         entityId: string;
-        layout: any;
-        model: any;
+        layout: RegionNode[];
+        model: ComponentModels;
         entity_form_fields: any;
       }
     >({
@@ -89,7 +93,7 @@ export const previewApi = createApi({
       },
     }),
     getLanguagePreview: builder.mutation<
-      { html: string; layout: any; model: any },
+      { html: string; layout: RegionNode[]; model: ComponentModels },
       {
         entityType: string;
         entityId: string;
@@ -276,8 +280,8 @@ const createUpdateComponentSelector = createSelector(
 
 type PostPreviewResult = { html: string; autoSaves: AutoSavesHash };
 type PostPreviewArg = {
-  layout: any;
-  model: any;
+  layout: RegionNode[];
+  model: ComponentModels;
   entity_form_fields: any;
   entityId: string;
   entityType: string;
