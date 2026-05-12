@@ -18,7 +18,7 @@ const LanguageSelector = () => {
   const { data: languages = [], isLoading } = useGetLanguagesQuery();
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const navigate = useNavigate();
-  const { entityType, entityId } = useParams();
+  const { entityType, entityId, width } = useParams();
   const dispatch = useAppDispatch();
 
   // Find the default language when data is loaded.
@@ -84,9 +84,11 @@ const LanguageSelector = () => {
       // Clear any existing cache for fresh language fetch.
       dispatch(componentAndLayoutApi.util.invalidateTags([{ type: 'Layout' }]));
 
-      // Navigate to preview with the language info in URL query parameter and state
+      // Navigate to preview with the language info in URL query parameter and state.
+      // Preserve the current viewport width, defaulting to 'full' if not set.
+      const currentWidth = width || 'full';
       navigate(
-        `/preview/${entityType}/${entityId}/full?language=${languageId}`,
+        `/preview/${entityType}/${entityId}/${currentWidth}?language=${languageId}`,
         {
           state: { isLanguagePreview: true, language: languageId },
         },
