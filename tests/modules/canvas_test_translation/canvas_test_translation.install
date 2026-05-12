@@ -23,18 +23,19 @@ use Drupal\language\Entity\ConfigurableLanguage;
  * Uses hook_modules_installed() instead of hook_install() to ensure all
  * dependencies are installed before creating entities that depend on them.
  *
- * IMPORTANT: BEFORE installing this module for manual testing.
- * 1. drush en content_translation.
- * 2. Add the French language at admin/config/regional/language.
- * 3. Enable translations for pages at admin/config/regional/content-language.
- *    Check "Page" and then save the form.
- *
  * @see \Drupal\Tests\canvas\Functional\TranslationTest::testCanvasDevTranslationLayoutApi()
  */
 function canvas_test_translation_modules_installed(array $modules): void {
   if (!in_array('canvas_test_translation', $modules, TRUE)) {
     return;
   }
+
+  // Ensure content translation is enabled for canvas_page entity type.
+  $translation_manager = \Drupal::service('content_translation.manager');
+  if (!$translation_manager->isEnabled('canvas_page', 'canvas_page')) {
+    $translation_manager->setEnabled('canvas_page', 'canvas_page', TRUE);
+  }
+
   $language_manager = \Drupal::service(LanguageManagerInterface::class);
   \assert($language_manager instanceof ConfigurableLanguageManagerInterface);
 

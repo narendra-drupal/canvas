@@ -32,15 +32,6 @@ test.describe('Language Selector', () => {
       userAgent: drupalSite.userAgent,
     });
 
-    // Enable content translation for canvas_page entity type.
-    await execDrush(
-      `php-eval "\\Drupal::service('content_translation.manager')->setEnabled('canvas_page', 'canvas_page', TRUE);"`,
-      {
-        url: drupalSite.url,
-        userAgent: drupalSite.userAgent,
-      },
-    );
-
     // Enable canvas_dev_translation and canvas_test_translation.
     await execDrush(
       'pm:enable canvas_dev_translation canvas_test_translation',
