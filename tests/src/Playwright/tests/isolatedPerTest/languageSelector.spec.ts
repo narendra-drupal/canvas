@@ -41,7 +41,7 @@ test.describe('Language Selector', () => {
       },
     );
 
-    // Enable canvas_dev_translation module.
+    // Enable canvas_dev_translation and canvas_test_translation.
     await execDrush(
       'pm:enable canvas_dev_translation canvas_test_translation',
       {

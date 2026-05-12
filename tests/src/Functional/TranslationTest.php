@@ -469,7 +469,7 @@ class TranslationTest extends FunctionalTestBase {
     };
 
     // Helper: returns the first component's name from the first non-content
-    // region (the PageRegion created by canvas_dev_translation hook_install()).
+    // region (the PageRegion created by canvas_test_translation hook_install()).
     $get_region_name_in_api_response = function (string $root_relative_url): ?string {
       $response = $this->makeApiRequest('GET', Url::fromUri("base:$root_relative_url"), []);
       self::assertSame(200, $response->getStatusCode());
