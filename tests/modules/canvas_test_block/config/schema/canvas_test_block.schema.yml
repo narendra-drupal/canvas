@@ -7,6 +7,7 @@ block.settings.canvas_test_block_input_validatable:
     name:
       type: string
       label: 'Name'
+      translatable: true
 block.settings.canvas_test_block_input_unvalidatable:
   type: block_settings
   label: 'Canvas Test Block settings'
