@@ -14,13 +14,11 @@ import { handleAutoSavesHashUpdate } from '@/utils/autoSaves';
 
 import type { RootState } from '@/app/store';
 import type {
-  ComponentModels,
-  RegionNode,
-} from '@/features/layout/layoutModelSlice';
-import type {
   ComponentModel,
+  ComponentModels,
   EvaluatedComponentModel,
   PropSource,
+  RegionNode,
   ResolvedValues,
 } from '@/features/layout/layoutModelSlice';
 import type { EditorFrameContext } from '@/features/ui/uiSlice';
