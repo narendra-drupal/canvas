@@ -43,7 +43,7 @@ final class ApiLanguageController {
 
     $cacheability = new CacheableMetadata();
     $cacheability->addCacheTags(['config:configurable_language_list']);
-    $response = new CacheableJsonResponse($data);
+    $response = new CacheableJsonResponse(['data' => $data]);
     $response->addCacheableDependency($cacheability);
     return $response;
   }
