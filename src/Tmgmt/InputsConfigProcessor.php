@@ -5,7 +5,14 @@ namespace Drupal\canvas\Tmgmt;
 use Drupal\canvas\Config\Schema\ComponentInputsMapping;
 use Drupal\tmgmt_config\DefaultConfigProcessor;
 
-class InputsConfigProcessor extends DefaultConfigProcessor {
+/**
+ * Extracts translatables from Canvas component instances' inputs in config.
+ *
+ * @see \Drupal\canvas\ComponentSource\ComponentInstanceInputsConfigSchemaGeneratorInterface
+ *
+ * @internal
+ */
+final class InputsConfigProcessor extends DefaultConfigProcessor {
 
   public function extractTranslatables($schema, $config_data, $base_key = '') {
     if (!$schema instanceof ComponentInputsMapping) {
@@ -74,6 +81,8 @@ class InputsConfigProcessor extends DefaultConfigProcessor {
 
   private static function extractStaticPropSourceTranslatables(array $config_data_for_input_key, array $translatable_for_input_key): ?array {
     // Rich prose.
+    // @see \Drupal\canvas\PropShape\PropShape::isPlainOrRichProse()
+    // @see \Drupal\text\Plugin\Field\FieldType\TextItemBase::propertyDefinitions()
     if (\array_keys($config_data_for_input_key) === ['value', 'format']) {
       // What the parent method generated: because this input is marked as
       // translatable and it contains rich prose, it set the `#text` to
@@ -97,6 +106,8 @@ class InputsConfigProcessor extends DefaultConfigProcessor {
 
     // URI-esque.
     // @see \Drupal\canvas\JsonSchemaInterpreter\JsonSchemaStringFormat::isUriEsque()
+    // @see \Drupal\link\Plugin\Field\FieldType\LinkItem::propertyDefinitions()
+    // @see \Drupal\canvas\Plugin\Field\FieldTypeOverride\LinkItemOverride::propertyDefinitions()
     if (\array_keys($config_data_for_input_key) === ['uri', 'options']) {
       // What the parent method generated: because this input is marked as
       // translatable and it contains rich prose, it set the `#text` to
