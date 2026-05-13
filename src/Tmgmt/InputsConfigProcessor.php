@@ -25,6 +25,7 @@ final class InputsConfigProcessor extends DefaultConfigProcessor {
       // Unlike ComponentInputs::getTranslatableInputKeys(), this does not need
       // weird tricks to determine translatability of an explicit input key,
       // because this can just inspect the config schema directly.
+      // @see \Drupal\canvas\ComponentSource\ComponentInstanceInputsConfigSchemaGeneratorInterface
       // @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys()
       $translatable_input_keys = \array_keys(\array_filter(
         $schema->getDataDefinition()['mapping'],
@@ -32,9 +33,14 @@ final class InputsConfigProcessor extends DefaultConfigProcessor {
       ));
 
       // parent::extractTranslatables() works fine for explicit inputs that
-      // contain a single-cardinality plain prose. It fails for:
-      // - rich prose (because the text` field type stores multiple field
-      //   properties: `value` + `format`)
+      // contain
+      // - a single-cardinality plain prose StaticPropSource
+      // - a translatable single string in config schema (`type: label`,
+      //   `type: text`, et cetera)
+      // The parent fails for:
+      // - rich prose (because the `text` field type stores multiple field
+      //   properties: `value` + `format`, and the `type: text_format` config
+      //   schema type has those same 2 key-value pairs)
       // - URI-esque (because the `uri` field type stores multiple field
       //   properties: `uri` + `options`)
       // - multiple-cardinality
@@ -44,14 +50,14 @@ final class InputsConfigProcessor extends DefaultConfigProcessor {
         $is_single_cardinality = !\is_array($config_data[$key]) || !\array_is_list($config_data[$key]);
 
         if ($is_single_cardinality) {
-          // Nothing to do: plain prose.
+          // Nothing to do: plain prose, or plain config schema
           if (\is_string($config_data[$key])) {
             \assert(\array_key_exists($key, $translatables) && \is_string($translatables[$key]['#text']));
             continue;
           }
           \assert(\is_array($config_data[$key]));
 
-          $translatables[$key] = self::extractStaticPropSourceTranslatables($config_data[$key], $translatables[$key]);
+          $translatables[$key] = self::extractTranslatablesFromStructuredArray($config_data[$key], $translatables[$key]);
         }
         else {
           // What the parent method generated: because this input is marked as
@@ -79,8 +85,9 @@ final class InputsConfigProcessor extends DefaultConfigProcessor {
     return $translatables;
   }
 
-  private static function extractStaticPropSourceTranslatables(array $config_data_for_input_key, array $translatable_for_input_key): array {
-    // Rich prose.
+  private static function extractTranslatablesFromStructuredArray(array $config_data_for_input_key, array $translatable_for_input_key): array {
+    // Rich prose. Either in a StaticPropSource or in config schema.
+    // @see `type: text_format`
     // @see \Drupal\canvas\PropShape\PropShape::isPlainOrRichProse()
     // @see \Drupal\text\Plugin\Field\FieldType\TextItemBase::propertyDefinitions()
     if (\array_keys($config_data_for_input_key) === ['value', 'format']) {
