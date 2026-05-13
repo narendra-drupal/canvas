@@ -51,7 +51,7 @@ final class InputsConfigProcessor extends DefaultConfigProcessor {
           }
           \assert(\is_array($config_data[$key]));
 
-          return self::extractStaticPropSourceTranslatables($config_data[$key], $translatables[$key]) ?? $translatables[$key];
+          $translatables[$key] = self::extractStaticPropSourceTranslatables($config_data[$key], $translatables[$key]);
         }
         else {
           // What the parent method generated: because this input is marked as
@@ -79,7 +79,7 @@ final class InputsConfigProcessor extends DefaultConfigProcessor {
     return $translatables;
   }
 
-  private static function extractStaticPropSourceTranslatables(array $config_data_for_input_key, array $translatable_for_input_key): ?array {
+  private static function extractStaticPropSourceTranslatables(array $config_data_for_input_key, array $translatable_for_input_key): array {
     // Rich prose.
     // @see \Drupal\canvas\PropShape\PropShape::isPlainOrRichProse()
     // @see \Drupal\text\Plugin\Field\FieldType\TextItemBase::propertyDefinitions()
