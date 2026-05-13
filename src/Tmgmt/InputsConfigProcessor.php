@@ -42,71 +42,71 @@ use Drupal\tmgmt_config\DefaultConfigProcessor;
  */
 final class InputsConfigProcessor extends DefaultConfigProcessor {
 
+  /**
+   * {@inheritdoc}
+   */
   public function extractTranslatables($schema, $config_data, $base_key = '') {
+    $translatables = parent::extractTranslatables($schema, $config_data, $base_key);
     if (!$schema instanceof ComponentInputsMapping) {
-      return parent::extractTranslatables($schema, $config_data, $base_key);
+      return $translatables;
     }
 
-    $translatables = parent::extractTranslatables($schema, $config_data, $base_key);
+    // Unlike ComponentInputs::getTranslatableInputKeys(), this does not need
+    // weird tricks to determine translatability of an explicit input key,
+    // because this can just inspect the config schema directly.
+    // @see \Drupal\canvas\ComponentSource\ComponentInstanceInputsConfigSchemaGeneratorInterface
+    // @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys()
+    $translatable_input_keys = \array_keys(\array_filter(
+      // @phpstan-ignore-next-line offsetAccess.nonOffsetAccessible
+      $schema->getDataDefinition()['mapping'],
+      fn(array $mapping_item): bool => \array_key_exists('translatable', $mapping_item) && $mapping_item['translatable'] === TRUE,
+    ));
 
-    if ($schema instanceof ComponentInputsMapping) {
-      // Unlike ComponentInputs::getTranslatableInputKeys(), this does not need
-      // weird tricks to determine translatability of an explicit input key,
-      // because this can just inspect the config schema directly.
-      // @see \Drupal\canvas\ComponentSource\ComponentInstanceInputsConfigSchemaGeneratorInterface
-      // @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys()
-      $translatable_input_keys = \array_keys(\array_filter(
-        $schema->getDataDefinition()['mapping'],
-        fn(array $mapping_item): bool => \array_key_exists('translatable', $mapping_item) && $mapping_item['translatable'] === TRUE,
-      ));
+    // parent::extractTranslatables() works fine for explicit inputs that
+    // contain
+    // - a single-cardinality plain prose StaticPropSource
+    // - a translatable single string in config schema (`type: label`,
+    //   `type: text`, et cetera)
+    // The parent fails for:
+    // - rich prose (because the `text` field type stores multiple field
+    //   properties: `value` + `format`, and the `type: text_format` config
+    //   schema type has those same 2 key-value pairs)
+    // - URI-esque (because the `uri` field type stores multiple field
+    //   properties: `uri` + `options`)
+    // - multiple-cardinality
+    // @see \Drupal\canvas\PropShape\PropShape::isPlainOrRichProse()
+    // @see \Drupal\canvas\JsonSchemaInterpreter\JsonSchemaStringFormat::isUriEsque()
+    foreach ($translatable_input_keys as $key) {
+      $is_single_cardinality = !\is_array($config_data[$key]) || !\array_is_list($config_data[$key]);
 
-      // parent::extractTranslatables() works fine for explicit inputs that
-      // contain
-      // - a single-cardinality plain prose StaticPropSource
-      // - a translatable single string in config schema (`type: label`,
-      //   `type: text`, et cetera)
-      // The parent fails for:
-      // - rich prose (because the `text` field type stores multiple field
-      //   properties: `value` + `format`, and the `type: text_format` config
-      //   schema type has those same 2 key-value pairs)
-      // - URI-esque (because the `uri` field type stores multiple field
-      //   properties: `uri` + `options`)
-      // - multiple-cardinality
-      // @see \Drupal\canvas\PropShape\PropShape::isPlainOrRichProse()
-      // @see \Drupal\canvas\JsonSchemaInterpreter\JsonSchemaStringFormat::isUriEsque()
-      foreach ($translatable_input_keys as $key) {
-        $is_single_cardinality = !\is_array($config_data[$key]) || !\array_is_list($config_data[$key]);
-
-        if ($is_single_cardinality) {
-          // Nothing to do: plain prose, or plain config schema
-          if (\is_string($config_data[$key])) {
-            \assert(\array_key_exists($key, $translatables) && \is_string($translatables[$key]['#text']));
-            continue;
-          }
-          \assert(\is_array($config_data[$key]));
-
-          $translatables[$key] = self::extractTranslatablesFromStructuredArray($config_data[$key], $translatables[$key]);
+      if ($is_single_cardinality) {
+        // Nothing to do: plain prose, or plain config schema
+        if (\is_string($config_data[$key])) {
+          \assert(\array_key_exists($key, $translatables) && \is_string($translatables[$key]['#text']));
+          continue;
         }
-        else {
-          // What the parent method generated: because this input is marked as
-          // translatable, it set the `#text` to translate to the stored values,
-          // but they are an array of strings, which will crash TMGMT.
-          \assert($config_data[$key] === $translatables[$key]['#text']);
+        \assert(\is_array($config_data[$key]));
+        $translatables[$key] = self::extractTranslatablesFromStructuredArray($config_data[$key], $translatables[$key]);
+      }
+      else {
+        // What the parent method generated: because this input is marked as
+        // translatable, it set the `#text` to translate to the stored values,
+        // but they are an array of strings, which will crash TMGMT.
+        \assert($config_data[$key] === $translatables[$key]['#text']);
 
-          // For example, for a `sdc.canvas_test_sdc.tags` component instance:
-          // - reuse the label generated by the parent method ("Tags")
-          // - unset `tags` in $translatables
-          // - instead generate `tags.0` (label: "Tags (1)"), `tags.1` (label:
-          //   "Tags (2)"), et cetera translatables
-          $label = $translatables[$key]['#label'];
-          $translatables[$key] = [];
-          foreach (\array_keys($config_data[$key]) as $delta) {
-            $translatables[$key][$delta] = [
-              '#label' => \sprintf('%s (%d)', (string) $label, $delta + 1),
-              '#text' => $config_data[$key][$delta],
-              '#translate' => TRUE,
-            ];
-          }
+        // For example, for a `sdc.canvas_test_sdc.tags` component instance:
+        // - reuse the label generated by the parent method ("Tags")
+        // - unset `tags` in $translatables
+        // - instead generate `tags.0` (label: "Tags (1)"), `tags.1` (label:
+        //   "Tags (2)"), et cetera translatables
+        $label = $translatables[$key]['#label'];
+        $translatables[$key] = [];
+        foreach (\array_keys($config_data[$key]) as $delta) {
+          $translatables[$key][$delta] = [
+            '#label' => \sprintf('%s (%d)', (string) $label, $delta + 1),
+            '#text' => $config_data[$key][$delta],
+            '#translate' => TRUE,
+          ];
         }
       }
     }

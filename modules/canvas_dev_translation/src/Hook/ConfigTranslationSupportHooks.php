@@ -36,12 +36,11 @@ readonly final class ConfigTranslationSupportHooks {
     }
   }
 
-
   /**
    * Implements hook_config_schema_info_alter().
    */
   #[Hook('config_schema_info_alter')]
-  public function configSchemaInfoAlter(array &$definitions): void {
+  public static function configSchemaInfoAlter(array &$definitions): void {
     // 'canvas.pattern.*' is intentionally left out of this list as patterns are
     // not translatable.
     $types_with_component_trees = [
