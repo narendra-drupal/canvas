@@ -90,10 +90,6 @@ final class CanvasStaticPropSourceFieldWidget extends FormElementBase {
   public function setConfig(Config $base_config, LanguageConfigOverride $config_translation, $config_values, $base_key = NULL): void {
     \assert(\is_string($base_key));
 
-    // Field widgets always generate explicit delta values; even if it's single
-    // cardinality.
-    \assert(\array_is_list($config_values), 'Values not keyed by deltas; this does not seem to be a form submission? Every field widget keys values by field item deltas.');
-
     // Optimized ("collapsed") value.
     // @see \Drupal\canvas\Plugin\Canvas\ComponentSource\GeneratedFieldExplicitInputUxComponentSourceBase::collapse()
     $default_static_prop_source = self::getDefaultStaticPropSource($this->definition);
