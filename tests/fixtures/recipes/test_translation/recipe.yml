@@ -1,0 +1,29 @@
+name: 'Test Translation'
+description: 'Creates canvas page and content template entities with French translations for testing translation scenarios'
+type: 'Canvas'
+install:
+  - stark
+  - canvas
+  - language
+  - content_translation
+  - canvas_test_sdc
+recipes:
+  - ./core/recipes/article_content_type
+  - page_content_type
+config:
+  strict: false
+  import:
+    canvas: '*'
+  actions:
+    language.entity.fr:
+      create:
+        id: fr
+        label: Français
+    language.content_settings.canvas_page.canvas_page:
+      create:
+        target_entity_type_id: canvas_page
+        target_bundle: canvas_page
+        third_party_settings:
+          content_translation:
+            enabled: true
+
