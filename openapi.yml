@@ -1702,29 +1702,35 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  required:
-                    - id
-                    - name
-                    - direction
-                    - isDefault
-                  additionalProperties: false
-                  properties:
-                    id:
-                      type: string
-                      description: Language code
-                    name:
-                      type: string
-                      description: Language name
-                    direction:
-                      type: string
-                      enum: ['ltr', 'rtl']
-                      description: Text direction
-                    isDefault:
-                      type: boolean
-                      description: Whether this is the site default language
+                type: object
+                required:
+                  - data
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - name
+                        - direction
+                        - isDefault
+                      additionalProperties: false
+                      properties:
+                        id:
+                          type: string
+                          description: Language code
+                        name:
+                          type: string
+                          description: Language name
+                        direction:
+                          type: string
+                          enum: ['ltr', 'rtl']
+                          description: Text direction
+                        isDefault:
+                          type: boolean
+                          description: Whether this is the site default language
   '/canvas/api/v0/layout-content-template/{configEntityId}/{entityId}':
     description: Layout content template endpoints for managing layout components with preview entity context
     parameters:

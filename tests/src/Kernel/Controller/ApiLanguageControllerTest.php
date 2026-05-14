@@ -50,7 +50,10 @@ class ApiLanguageControllerTest extends CanvasKernelTestBase {
     $response = $this->request(Request::create('/canvas/api/v0/languages'));
     self::assertSame(200, $response->getStatusCode());
 
-    $languages = static::decodeResponse($response);
+    $responseData = static::decodeResponse($response);
+    self::assertIsArray($responseData);
+    self::assertArrayHasKey('data', $responseData);
+    $languages = $responseData['data'];
     self::assertIsArray($languages);
     // Only English is configured by default; locked languages (und, zxx) are
     // excluded because the endpoint uses STATE_CONFIGURABLE.
@@ -71,7 +74,10 @@ class ApiLanguageControllerTest extends CanvasKernelTestBase {
     $response = $this->request(Request::create('/canvas/api/v0/languages'));
     self::assertSame(200, $response->getStatusCode());
 
-    $languages = static::decodeResponse($response);
+    $responseData = static::decodeResponse($response);
+    self::assertIsArray($responseData);
+    self::assertArrayHasKey('data', $responseData);
+    $languages = $responseData['data'];
     self::assertIsArray($languages);
     self::assertCount(2, $languages);
 
