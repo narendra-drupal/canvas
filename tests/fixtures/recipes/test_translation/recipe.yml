@@ -9,7 +9,6 @@ install:
   - canvas_test_sdc
 recipes:
   - ./core/recipes/article_content_type
-  - page_content_type
 config:
   strict: false
   import:
