@@ -16,6 +16,7 @@ export const languagesApi = createApi({
   endpoints: (builder) => ({
     getLanguages: builder.query<Language[], void>({
       query: () => '/canvas/api/v0/languages',
+      transformResponse: (response: { data: Language[] }) => response.data,
       providesTags: () => [{ type: 'Languages', id: 'LIST' }],
     }),
   }),
