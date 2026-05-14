@@ -1,4 +1,5 @@
 # cspell:ignore région
+uuid: 59f2a134-8def-4da6-b2fd-e35c3a015d51
 langcode: en
 status: true
 dependencies:
@@ -17,11 +18,11 @@ component_tree:
   - uuid: 22222222-2222-4222-8222-222222222222
     component_id: sdc.canvas_test_sdc.heading
     component_version: 8c01a2bdb897a810
-    inputs:
-      text: 'Hello from template'
-      element: h2
+    inputs: '{"text":"Hello from template","element":"h2"}'
+    label: 'English template heading'
   - uuid: 22222222-2222-4222-8221-222222222222
     component_id: sdc.canvas_test_sdc.heading
     component_version: 8c01a2bdb897a810
-    inputs: '{"text":{"sourceType":"dynamic","expression":"\u2139\ufe0e\u241centity:node:article\u241dtitle\u241e\u241fvalue"},"element":"h2"}'
-
+    inputs: '{"text":{"sourceType":"entity-field","expression":"\u2139\ufe0e\u241centity:node:article\u241dtitle\u241e\u241fvalue"},"element":"h2"}'
+    label: 'English template heading'
+exposed_slots: {}
