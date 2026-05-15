@@ -1,14 +1,12 @@
 name: 'Test Translation'
 description: 'Creates canvas page and content template entities with French translations for testing translation scenarios'
 type: 'Canvas'
+recipes:
+  - base
 install:
-  - stark
-  - canvas
   - language
   - content_translation
   - canvas_test_sdc
-recipes:
-  - ./core/recipes/article_content_type
 config:
   strict: false
   import:
@@ -25,4 +23,3 @@ config:
         third_party_settings:
           content_translation:
             enabled: true
-
