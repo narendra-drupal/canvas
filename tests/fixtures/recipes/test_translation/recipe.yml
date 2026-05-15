@@ -37,7 +37,11 @@ config:
     language.entity.fr:
       create:
         id: fr
-        label: Français
+        label: French
+    language.entity.es:
+        create:
+          id: es
+          label: Spanish
     language.content_settings.canvas_page.canvas_page:
       create:
         target_entity_type_id: canvas_page
@@ -61,11 +65,13 @@ config:
       simpleConfigUpdate:
         negotiation.language_interface.enabled.language-url: 0
     # Language config overrides for config entities.
-    # The files in config/language/fr/ follow Drupal's filesystem convention for
-    # language collection overrides (FileStorage maps the 'language.fr' collection
-    # to the 'language/fr/' subdirectory). However, RecipeConfigInstaller only
-    # processes the default collection, so the setLanguageOverride action is used
-    # to write these overrides to the correct 'language.fr' collection in storage.
+    # Normally these could be placed in config/language/fr/ following Drupal's
+    # convention for language collection overrides (FileStorage maps the
+    # 'language.fr' collection to the 'language/fr/' subdirectory). However,
+    # RecipeConfigInstaller only processes the default collection, so files in
+    # config/language/fr/ would be silently ignored. The setLanguageOverride
+    # action is used instead to write directly to the correct 'language.fr'
+    # collection in storage.
     canvas.page_region.stark.sidebar_first:
       setLanguageOverride:
         language: fr

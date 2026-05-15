@@ -1,7 +1,0 @@
-# cspell:ignore région
-component_tree:
-  33333333-3333-4333-8333-333333333333:
-    label: 'French region heading'
-    inputs:
-      text: 'Bonjour de la région'
-
