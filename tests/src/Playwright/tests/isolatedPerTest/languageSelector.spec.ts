@@ -55,9 +55,9 @@ test.describe('Language Selector', () => {
     await languageButton.click();
 
     const languageOptions = page.locator('[role="menuitem"]');
-    const count = await languageOptions.count();
+    const count = languageOptions;
 
-    expect(count).toBe(3);
+    await expect(count).toHaveCount(3);
   });
 
   test('Preview URL includes language query parameter when accessing language translation', async ({
@@ -232,10 +232,10 @@ test.describe('Language Selector', () => {
     );
 
     // Verify English content is not displayed.
-    await expect(previewFrame.locator('text=Hello, Canvas!')).not.toBeVisible();
+    await expect(previewFrame.locator('text=Hello, Canvas!')).toBeHidden();
     await expect(
       previewFrame.locator('text=Hello from region'),
-    ).not.toBeVisible();
+    ).toBeHidden();
 
     // Verify page region is in French.
     let frameHtmlLang = await previewFrame.locator('html').getAttribute('lang');
@@ -280,10 +280,10 @@ test.describe('Language Selector', () => {
     // Verify French content is not displayed.
     await expect(
       previewFrame.locator('text=Bonjour, Canvas!'),
-    ).not.toBeVisible();
+    ).toBeHidden();
     await expect(
       previewFrame.locator('text=Bonjour de la région'),
-    ).not.toBeVisible();
+    ).toBeHidden();
 
     // Verify page region is in Spanish.
     frameHtmlLang = await previewFrame.locator('html').getAttribute('lang');
