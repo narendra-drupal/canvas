@@ -10,7 +10,7 @@ import { isolatedPerTest as test } from '../../fixtures/test.js';
  */
 
 test.use({
-  modules: ['canvas_test_sdc'],
+  modules: ['canvas_test_sdc', 'canvas_test_recipe'],
   enableTestExtensions: true,
 });
 
