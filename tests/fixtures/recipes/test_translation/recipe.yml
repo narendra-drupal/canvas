@@ -8,8 +8,10 @@ install:
   - content_translation
   - canvas
   - canvas_test_sdc
+  - stark
+  - canvas_dev_translation
 config:
-  strict: false
+  strict: true
   import:
     canvas: '*'
   actions:
