@@ -171,7 +171,7 @@ test.describe('Language Selector', () => {
   }) => {
     const drupalSite = drupal.drupalSite;
 
-    // Get the ID of the pre-created translation test page from canvas_test_translation.install.
+    // Get the ID of the pre-created translation test page from the recipe content fixture.
     const getPageIdCommand = `php-eval "
       \\$pages = \\Drupal::entityTypeManager()
         ->getStorage('canvas_page')

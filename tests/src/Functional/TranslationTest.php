@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// cspell:ignore magnifique Propulsé Bienvenue savoir Découvrez Identité visuelle prévisualisation Nœud
+// cspell:ignore magnifique Propulsé Bienvenue savoir Découvrez Identité visuelle
 
 namespace Drupal\Tests\canvas\Functional;
 
@@ -429,95 +429,6 @@ class TranslationTest extends FunctionalTestBase {
 
     self::assertArrayNotHasKey('heading', $override->getRawData()['component_tree']['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1']['inputs']);
     self::assertArrayNotHasKey(3, $override->getRawData()['component_tree']);
-  }
-
-  /**
-   * Tests that the layout API returns translated content from language-prefixed routes when canvas_test_translation is enabled.
-   *
-   * @todo This might just be temporary test until we have a Playwright test
-   *    that test this functionality with the translation preview.
-   */
-  public function testCanvasDevTranslationLayoutApi(): void {
-    $existing_template = ContentTemplate::load('node.article.full');
-    if ($existing_template instanceof ContentTemplate) {
-      $existing_template->delete();
-    }
-
-    // Install canvas_test_translation to get the canvas_page and
-    // ContentTemplate entities with French translations created in
-    // hook_modules_installed().
-    $module_installer = $this->container->get(ModuleInstallerInterface::class);
-    $module_installer->install(['canvas_test_translation']);
-    $this->rebuildContainer();
-
-    $pages = $this->container->get('entity_type.manager')
-      ->getStorage('canvas_page')
-      ->loadByProperties(['title' => 'Canvas Translation Test Page']);
-    $page = reset($pages);
-    $this->assertNotFalse($page);
-    $page_id = $page->id();
-
-    // Helper: returns the first component's name from the main content region.
-    $get_name_in_api_response = function (string $root_relative_url): ?string {
-      $response = $this->makeApiRequest('GET', Url::fromUri("base:$root_relative_url"), []);
-      self::assertSame(200, $response->getStatusCode());
-      $layout = json_decode((string) $response->getBody(), TRUE)['layout'];
-      // The layout may contain multiple regions; find the 'content' region by
-      // its id rather than relying on array position.
-      $content_region = current(array_filter($layout, fn($r) => $r['id'] === 'content'));
-      return $content_region['components'][0]['name'];
-    };
-
-    // Helper: returns the first component's name from the first non-content
-    // region (the PageRegion created by canvas_test_translation hook_install()).
-    $get_region_name_in_api_response = function (string $root_relative_url): ?string {
-      $response = $this->makeApiRequest('GET', Url::fromUri("base:$root_relative_url"), []);
-      self::assertSame(200, $response->getStatusCode());
-      $layout = json_decode((string) $response->getBody(), TRUE)['layout'];
-      $page_region = current(array_filter($layout, fn($r) => $r['id'] !== 'content'));
-      return $page_region['components'][0]['name'];
-    };
-
-    // Assert the canvas_page layout API returns the correct translation per
-    // language prefix.
-    self::assertSame('English heading', $get_name_in_api_response("/canvas/api/v0/layout/canvas_page/$page_id"));
-    self::assertSame('French heading', $get_name_in_api_response("/fr/canvas/api/v0/layout/canvas_page/$page_id"));
-
-    // Assert the PageRegion layout API returns the correct translation per
-    // language prefix.
-    self::assertSame('English region heading', $get_region_name_in_api_response("/canvas/api/v0/layout/canvas_page/$page_id"));
-    self::assertSame('French region heading', $get_region_name_in_api_response("/fr/canvas/api/v0/layout/canvas_page/$page_id"));
-
-    // Create an article node with English and French translations to use as the
-    // ContentTemplate preview entity. The French translation has a distinct
-    // title so we can assert language-aware field resolution.
-    $node_storage = $this->container->get('entity_type.manager')->getStorage('node');
-    $node = $node_storage->create([
-      'type' => 'article',
-      'title' => 'Preview node',
-      'status' => 1,
-    ]);
-    $node->save();
-    $fr_node = $node->addTranslation('fr');
-    $fr_node->set('title', 'Nœud de prévisualisation');
-    $fr_node->save();
-    $node_id = $node->id();
-
-    // Assert the ContentTemplate layout API returns the correct translation per
-    // language prefix (component label from LanguageConfigOverride).
-    self::assertSame('English template heading', $get_name_in_api_response("/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
-    self::assertSame('French template heading', $get_name_in_api_response("/fr/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
-
-    // Assert the entity field prop source (second component, UUID
-    // '22222222-2222-4222-8221-222222222222') resolves the node title in the
-    // correct language based on the language prefix in the URL.
-    $get_resolved_title_in_api_response = function (string $root_relative_url): mixed {
-      $response = $this->makeApiRequest('GET', Url::fromUri("base:$root_relative_url"), []);
-      self::assertSame(200, $response->getStatusCode());
-      return json_decode((string) $response->getBody(), TRUE)['model']['22222222-2222-4222-8221-222222222222']['resolved']['text'];
-    };
-    self::assertSame('Preview node', $get_resolved_title_in_api_response("/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
-    self::assertSame('Nœud de prévisualisation', $get_resolved_title_in_api_response("/fr/canvas/api/v0/layout-content-template/node.article.full/$node_id"));
   }
 
   /**
