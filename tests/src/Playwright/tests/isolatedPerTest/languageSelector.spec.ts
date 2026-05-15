@@ -9,39 +9,14 @@ import { isolatedPerTest as test } from '../../fixtures/test.js';
  * Tests language switching functionality and URL query parameters.
  */
 
-test.use({
-  modules: ['canvas_test_sdc', 'language', 'content_translation'],
-  enableTestExtensions: true,
-});
-
 test.describe('Language Selector', () => {
   // Since we're using isolatedPerTest, each test gets a fresh environment, so
   // this setup must run before each test.
   test.beforeEach(async ({ drupal }) => {
-    const drupalSite = drupal.drupalSite;
-
-    // Add French language.
-    await execDrush('language:add fr', {
-      url: drupalSite.url,
-      userAgent: drupalSite.userAgent,
-    });
-
-    // Add Spanish language.
-    await execDrush('language:add es', {
-      url: drupalSite.url,
-      userAgent: drupalSite.userAgent,
-    });
-
-    // Enable canvas_dev_translation and canvas_test_translation.
-    await execDrush(
-      'pm:enable canvas_dev_translation canvas_test_translation',
-      {
-        url: drupalSite.url,
-        userAgent: drupalSite.userAgent,
-      },
-    );
-
     await drupal.loginAsAdmin();
+    await drupal.applyRecipe(
+      `modules/contrib/canvas/tests/fixtures/recipes/test_translation`,
+    );
   });
 
   test('Language selector is visible', async ({ page, drupal, canvas }) => {
