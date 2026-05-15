@@ -1,17 +1,12 @@
 name: 'Test Translation'
 description: 'Creates canvas page and content template entities with French translations for testing translation scenarios'
 type: 'Canvas'
-recipes:
-  - base
 install:
   - language
   - content_translation
-  - canvas
-  - canvas_test_sdc
-  - stark
   - canvas_dev_translation
 config:
-  strict: true
+  strict: false
   import:
     canvas: '*'
   actions:
@@ -83,12 +78,3 @@ config:
               label: 'French region heading'
               inputs:
                 text: 'Bonjour de la région'
-    canvas.content_template.node.article.full:
-      setLanguageOverride:
-        language: fr
-        data:
-          component_tree:
-            22222222-2222-4222-8222-222222222222:
-              label: 'French template heading'
-              inputs:
-                text: 'Bonjour du template'

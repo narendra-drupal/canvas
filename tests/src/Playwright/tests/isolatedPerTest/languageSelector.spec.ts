@@ -9,6 +9,11 @@ import { isolatedPerTest as test } from '../../fixtures/test.js';
  * Tests language switching functionality and URL query parameters.
  */
 
+test.use({
+  modules: ['canvas_test_sdc'],
+  enableTestExtensions: true,
+});
+
 test.describe('Language Selector', () => {
   // Since we're using isolatedPerTest, each test gets a fresh environment, so
   // this setup must run before each test.
