@@ -6,12 +6,34 @@ recipes:
 install:
   - language
   - content_translation
+  - canvas
   - canvas_test_sdc
 config:
   strict: false
   import:
     canvas: '*'
   actions:
+    # language.entity.en must exist alongside language.entity.fr for
+    # LanguageServiceProvider::isMultilingual() to return true (it counts
+    # language.entity.* configs, requiring > 1). Without two language entities,
+    # path_processor_language is never registered in the DI container, so
+    # /fr/canvas/api/v0/... returns 404 instead of the language prefix being
+    # stripped and the request routed correctly.
+    # Note: the language module's config/install/language.entity.en.yml is
+    # skipped during recipe module install (isSyncing=true skips config entities
+    # in ConfigInstaller::createConfiguration()), so we must create it explicitly.
+    # createIfNotExists is used because a site may already have this entity if
+    # the language module was installed outside of the recipe.
+    language.entity.en:
+      createIfNotExists:
+        langcode: en
+        status: true
+        dependencies: {  }
+        id: en
+        label: English
+        direction: ltr
+        weight: 0
+        locked: false
     language.entity.fr:
       create:
         id: fr
@@ -23,3 +45,42 @@ config:
         third_party_settings:
           content_translation:
             enabled: true
+    # Explicitly configure URL path prefix as the language source and register
+    # the 'fr' prefix. Without this, /fr/canvas/api/v0/layout/... returns 404
+    # because PathProcessorLanguage does not strip the language prefix on a
+    # fresh recipe-applied site (entity hooks alone are not sufficient to
+    # guarantee language.negotiation is updated before the first request).
+    language.negotiation:
+      simpleConfigUpdate:
+        url.source: path_prefix
+        url.prefixes.fr: fr
+    # Enable URL-based language detection for the interface language type so
+    # that the /fr/ prefix is recognized and causes Drupal to load French
+    # entity translations and config overrides.
+    language.types:
+      simpleConfigUpdate:
+        negotiation.language_interface.enabled.language-url: 0
+    # Language config overrides for config entities.
+    # The files in config/language/fr/ follow Drupal's filesystem convention for
+    # language collection overrides (FileStorage maps the 'language.fr' collection
+    # to the 'language/fr/' subdirectory). However, RecipeConfigInstaller only
+    # processes the default collection, so the setLanguageOverride action is used
+    # to write these overrides to the correct 'language.fr' collection in storage.
+    canvas.page_region.stark.sidebar_first:
+      setLanguageOverride:
+        language: fr
+        data:
+          component_tree:
+            33333333-3333-4333-8333-333333333333:
+              label: 'French region heading'
+              inputs:
+                text: 'Bonjour de la région'
+    canvas.content_template.node.article.full:
+      setLanguageOverride:
+        language: fr
+        data:
+          component_tree:
+            22222222-2222-4222-8222-222222222222:
+              label: 'French template heading'
+              inputs:
+                text: 'Bonjour du template'
