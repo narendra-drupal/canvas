@@ -40,7 +40,7 @@ final class SetLanguageOverride implements ConfigActionPluginInterface, Containe
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
-    $languageManager = $container->get(ConfigurableLanguageManagerInterface::class);
+    $languageManager = $container->get('language_manager');
     \assert($languageManager instanceof ConfigurableLanguageManagerInterface);
     return new static(
       $languageManager,
