@@ -233,9 +233,7 @@ test.describe('Language Selector', () => {
 
     // Verify English content is not displayed.
     await expect(previewFrame.locator('text=Hello, Canvas!')).toBeHidden();
-    await expect(
-      previewFrame.locator('text=Hello from region'),
-    ).toBeHidden();
+    await expect(previewFrame.locator('text=Hello from region')).toBeHidden();
 
     // Verify page region is in French.
     let frameHtmlLang = await previewFrame.locator('html').getAttribute('lang');
@@ -278,9 +276,7 @@ test.describe('Language Selector', () => {
     });
 
     // Verify French content is not displayed.
-    await expect(
-      previewFrame.locator('text=Bonjour, Canvas!'),
-    ).toBeHidden();
+    await expect(previewFrame.locator('text=Bonjour, Canvas!')).toBeHidden();
     await expect(
       previewFrame.locator('text=Bonjour de la région'),
     ).toBeHidden();
