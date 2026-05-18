@@ -50,8 +50,8 @@ final class SetLanguageOverride implements ConfigActionPluginInterface, Containe
    * {@inheritdoc}
    */
   public function apply(string $configName, mixed $value): void {
-    if (!is_array($value) || !isset($value['language'], $value['data'])) {
-      throw new ConfigActionException(sprintf(
+    if (!\is_array($value) || !isset($value['language'], $value['data'])) {
+      throw new ConfigActionException(\sprintf(
         'setLanguageOverride for %s requires an array with "language" and "data" keys.',
         $configName,
       ));
@@ -60,8 +60,8 @@ final class SetLanguageOverride implements ConfigActionPluginInterface, Containe
     $langcode = $value['language'];
     $data = $value['data'];
 
-    if (!is_array($data)) {
-      throw new ConfigActionException(sprintf(
+    if (!\is_array($data)) {
+      throw new ConfigActionException(\sprintf(
         'setLanguageOverride "data" for %s must be an array.',
         $configName,
       ));
@@ -69,7 +69,7 @@ final class SetLanguageOverride implements ConfigActionPluginInterface, Containe
 
     $language = $this->languageManager->getLanguage($langcode);
     if ($language === NULL) {
-      throw new ConfigActionException(sprintf(
+      throw new ConfigActionException(\sprintf(
         'Language "%s" does not exist. Create language.entity.%s before using setLanguageOverride.',
         $langcode,
         $langcode,
@@ -77,7 +77,7 @@ final class SetLanguageOverride implements ConfigActionPluginInterface, Containe
     }
 
     if ($this->configFactory->get($configName)->isNew()) {
-      throw new ConfigActionException(sprintf(
+      throw new ConfigActionException(\sprintf(
         'Config %s does not exist. Create it before setting a language override.',
         $configName,
       ));
