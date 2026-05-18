@@ -23,6 +23,11 @@ final class ApiLanguageController {
 
   /**
    * Returns a list of configurable languages set up on the site.
+   *
+   * @todo Include a `hasTranslation` flag per language once the entity context
+   *   can be passed to this controller, so the language switcher dropdown can
+   *   indicate when a language falls back to the default translation.
+   *   @see https://www.drupal.org/project/canvas/issues/3590572
    */
   public function list(): CacheableJsonResponse {
     // STATE_CONFIGURABLE excludes locked system placeholders (und/zxx) and
