@@ -8,7 +8,7 @@ use Drupal\Core\Config\Action\Attribute\ConfigAction;
 use Drupal\Core\Config\Action\ConfigActionException;
 use Drupal\Core\Config\Action\ConfigActionPluginInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\language\ConfigurableLanguageManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -32,7 +32,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 final class SetLanguageOverride implements ConfigActionPluginInterface, ContainerFactoryPluginInterface {
 
   public function __construct(
-    private readonly LanguageManagerInterface $languageManager,
+    private readonly ConfigurableLanguageManagerInterface $languageManager,
     private readonly ConfigFactoryInterface $configFactory,
   ) {}
 
@@ -41,7 +41,7 @@ final class SetLanguageOverride implements ConfigActionPluginInterface, Containe
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
     return new static(
-      $container->get(LanguageManagerInterface::class),
+      $container->get(ConfigurableLanguageManagerInterface::class),
       $container->get(ConfigFactoryInterface::class),
     );
   }
