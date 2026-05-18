@@ -1,3 +1,4 @@
+# cspell:ignore région
 name: 'Test Translation'
 description: 'Creates canvas page and content template entities with French translations for testing translation scenarios'
 type: 'Canvas'
