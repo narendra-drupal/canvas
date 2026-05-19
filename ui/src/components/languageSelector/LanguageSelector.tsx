@@ -3,8 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronDownIcon, GlobeIcon } from '@radix-ui/react-icons';
 import { Button, DropdownMenu, Flex, Text } from '@radix-ui/themes';
 
-import { useAppDispatch } from '@/app/hooks';
-import { setConfiguration } from '@/features/configuration/configurationSlice';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import {
+  selectDevMode,
+  selectIsNew,
+  selectIsPublished,
+  setConfiguration,
+} from '@/features/configuration/configurationSlice';
 import {
   initialState as layoutInitialState,
   setInitialLayoutModel,
@@ -20,6 +25,9 @@ const LanguageSelector = () => {
   const navigate = useNavigate();
   const { entityType, entityId, width } = useParams();
   const dispatch = useAppDispatch();
+  const devMode = useAppSelector(selectDevMode);
+  const isNew = useAppSelector(selectIsNew);
+  const isPublished = useAppSelector(selectIsPublished);
 
   // Find the default language when data is loaded.
   const defaultLanguage = languages.find((lang) => lang.isDefault);
@@ -54,9 +62,9 @@ const LanguageSelector = () => {
           baseUrl: '/',
           entityType,
           entity: entityId,
-          isNew: false,
-          isPublished: false,
-          devMode: false,
+          isNew,
+          isPublished,
+          devMode,
         }),
       );
 
@@ -75,9 +83,9 @@ const LanguageSelector = () => {
           baseUrl: `/${languageId}/`,
           entityType,
           entity: entityId,
-          isNew: false,
-          isPublished: false,
-          devMode: false,
+          isNew,
+          isPublished,
+          devMode,
         }),
       );
 
@@ -98,12 +106,7 @@ const LanguageSelector = () => {
 
   const currentLangObj = languages.find((lang) => lang.id === currentLanguage);
 
-  if (isLoading || languages.length === 0) {
-    return null;
-  }
-
-  // If there's only one language, don't show the selector.
-  if (languages.length === 1) {
+  if (isLoading || languages.length <= 1) {
     return null;
   }
 
