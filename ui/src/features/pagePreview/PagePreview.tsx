@@ -43,49 +43,45 @@ const PagePreview = () => {
     language?: string;
   } | null;
   const isLanguagePreview = locationState?.isLanguagePreview || false;
+  const language = locationState?.language;
 
   useEffect(() => {
-    const sendPreviewRequest = async () => {
-      if (!entityType || !entityId) {
-        return;
-      }
-      try {
-        if (isLanguagePreview && locationState?.language) {
-          // For language preview, use GET to fetch the published content.
-          await getLanguagePreview({
-            entityType,
-            entityId,
-          }).unwrap();
-        } else {
-          // For normal preview, use POST with current edits.
-          await postPreview({
-            layout,
-            model,
-            entity_form_fields,
-            entityId,
-            entityType,
-          }).unwrap();
-        }
-      } catch (err) {
-        showBoundary(err);
-      }
-    };
-    // Trigger preview on mount for language preview, or when updatePreview is true for normal preview.
-    if (isLanguagePreview || updatePreview) {
-      sendPreviewRequest().then(() => {});
+    // Language preview: fetch once on mount (or when language/entity changes).
+    // Intentionally excludes layout/model from deps — getLanguagePreview dispatches
+    // setLayoutModel on success, which would otherwise re-trigger this effect
+    // and cause an infinite request loop.
+    if (!isLanguagePreview || !language || !entityType || !entityId) {
+      return;
     }
+    getLanguagePreview({ entityType, entityId }).unwrap().catch(showBoundary);
+  }, [
+    isLanguagePreview,
+    language,
+    entityType,
+    entityId,
+    getLanguagePreview,
+    showBoundary,
+  ]);
+
+  useEffect(() => {
+    // Normal preview: fire when editor content changes.
+    // Skip entirely during language preview to avoid conflicting requests.
+    if (isLanguagePreview || !updatePreview || !entityType || !entityId) {
+      return;
+    }
+    postPreview({ layout, model, entity_form_fields, entityId, entityType })
+      .unwrap()
+      .catch(showBoundary);
   }, [
     layout,
     model,
     postPreview,
-    getLanguagePreview,
     entity_form_fields,
     entityId,
     entityType,
     updatePreview,
     showBoundary,
     isLanguagePreview,
-    locationState,
   ]);
 
   useEffect(() => {
