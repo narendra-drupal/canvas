@@ -55,9 +55,8 @@ test.describe('Language Selector', () => {
     await languageButton.click();
 
     const languageOptions = page.locator('[role="menuitem"]');
-    const count = languageOptions;
 
-    await expect(count).toHaveCount(3);
+    await expect(languageOptions).toHaveCount(3);
   });
 
   test('Preview URL includes language query parameter when accessing language translation', async ({
