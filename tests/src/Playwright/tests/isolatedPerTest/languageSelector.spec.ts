@@ -15,8 +15,6 @@ test.use({
 });
 
 test.describe('Language Selector', () => {
-  // Since we're using isolatedPerTest, each test gets a fresh environment, so
-  // this setup must run before each test.
   test.beforeEach(async ({ drupal }) => {
     await drupal.loginAsAdmin();
     await drupal.applyRecipe(
@@ -192,7 +190,6 @@ test.describe('Language Selector', () => {
     await page.goto(`/canvas/editor/canvas_page/${pageId}`);
     await canvas.waitForEditorUi();
 
-    // Switch to French language.
     const languageButton = page
       .locator('[data-testid="canvas-topbar"] button')
       .filter({ hasText: /English/ })

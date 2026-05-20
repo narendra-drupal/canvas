@@ -12,7 +12,7 @@ const LanguageSelector = () => {
 
   // Derive the active language directly from the URL so the dropdown always
   // reflects the correct language on any navigation, including browser
-  // back/forward, without needing local state or cleanup logic.
+  // back/forward.
   const activeLanguageId = searchParams.get('language') ?? '';
   const defaultLanguage = languages.find((lang) => lang.isDefault);
   const currentLanguage =
@@ -25,14 +25,13 @@ const LanguageSelector = () => {
       return;
     }
 
-    // If selecting the default language, navigate back to editor.
-    // PagePreview's cleanup effect handles resetting baseUrl and clearing
-    // stale language content on unmount.
+    // Navigate to the editor for the default language, or to the preview with
+    // a language query parameter and state for non-default languages.
+    // PagePreview's effect and cleanup handle setting baseUrl, fetching
+    // content, and resetting state on unmount.
     if (selectedLang.isDefault) {
       navigate(`/editor/${entityType}/${entityId}`);
     } else {
-      // Navigate to preview with the language info in URL query parameter and
-      // state. PagePreview's effect handles setting baseUrl and fetching.
       // Preserve the current viewport width, defaulting to 'full' if not set.
       const currentWidth = width || 'full';
       navigate(
