@@ -6,7 +6,7 @@ namespace Drupal\canvas_dev_translation\Hook;
 
 use Drupal\canvas\Entity\ContentTemplate;
 use Drupal\canvas\Entity\PageRegion;
-use Drupal\canvas\Tmgmt\InputsConfigProcessor;
+use Drupal\canvas\Tmgmt\ComponentInputsConfigProcessor;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\Hook\Order\OrderBefore;
@@ -49,7 +49,7 @@ readonly final class ConfigTranslationSupportHooks {
     ];
     foreach ($types_with_component_trees as $types_with_component_tree) {
       if (isset($definitions[$types_with_component_tree])) {
-        $definitions[$types_with_component_tree]['tmgmt_config_processor'] = InputsConfigProcessor::class;
+        $definitions[$types_with_component_tree]['tmgmt_config_processor'] = ComponentInputsConfigProcessor::class;
       }
     }
   }

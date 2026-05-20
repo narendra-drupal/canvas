@@ -77,10 +77,10 @@ parameters:
       count: 1
       path: src/ConfigTranslation/CanvasComponentTreeItemInputsMappingFormElement.php
     -
-      message: '#^Method Drupal\\canvas\\Tmgmt\\InputsConfigProcessor\:\:extractTranslatables\(\) has parameter \$config_data with no type specified\.$#'
+      message: '#^Method Drupal\\canvas\\Tmgmt\\ComponentInputsConfigProcessor\:\:extractTranslatables\(\) has parameter \$config_data with no type specified\.$#'
       identifier: missingType.parameter
       count: 1
-      path: src/Tmgmt/InputsConfigProcessor.php
+      path: src/Tmgmt/ComponentInputsConfigProcessor.php
     # canvas_ai and canvas_personalization have their own dead code cleanup tasks.
     - { message: '#^(Unused |Property .+ is never (read|written))#', path: modules/canvas_ai/** }
     - { message: '#^(Unused |Property .+ is never (read|written))#', path: modules/canvas_personalization/** }

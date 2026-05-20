@@ -8,12 +8,12 @@ use Drupal\tmgmt_config\DefaultConfigProcessor;
 /**
  * Extracts translatables from Canvas component instances' inputs in config.
  *
- * Note that the config schema generat ed for each component instance's `inputs`
+ * Note that the config schema generated for each component instance's `inputs`
  * is limited to the level of granularity that each component source's
  * `inputs_config_schema_generator` implementation chose.
  *
  * @see \Drupal\canvas\ComponentSource\ComponentInstanceInputsConfigSchemaGeneratorInterface
- * @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys()
+ * @see \Drupal\canvas\Config\Schema\ComponentInputsMapping
  *
  * For example, for the `block` ComponentSource plugin, a full config schema is
  * provided, potentially for deeply nested values. By contrast, for the `js`
@@ -40,7 +40,7 @@ use Drupal\tmgmt_config\DefaultConfigProcessor;
  *
  * @internal
  */
-final class InputsConfigProcessor extends DefaultConfigProcessor {
+final class ComponentInputsConfigProcessor extends DefaultConfigProcessor {
 
   /**
    * {@inheritdoc}
@@ -55,7 +55,7 @@ final class InputsConfigProcessor extends DefaultConfigProcessor {
     // weird tricks to determine translatability of an explicit input key,
     // because this can just inspect the config schema directly.
     // @see \Drupal\canvas\ComponentSource\ComponentInstanceInputsConfigSchemaGeneratorInterface
-    // @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys()
+    // @see \Drupal\canvas\Config\Schema\ComponentInputsMapping
     $translatable_input_keys = \array_keys(\array_filter(
       // @phpstan-ignore-next-line offsetAccess.nonOffsetAccessible
       $schema->getDataDefinition()['mapping'],
