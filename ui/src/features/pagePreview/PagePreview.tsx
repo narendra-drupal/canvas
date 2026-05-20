@@ -21,7 +21,10 @@ import {
   selectPageData,
   setInitialPageData,
 } from '@/features/pageData/pageDataSlice';
-import { selectPreviewHtml } from '@/features/pagePreview/previewSlice';
+import {
+  selectPreviewHtml,
+  setHtml,
+} from '@/features/pagePreview/previewSlice';
 import {
   useGetLanguagePreviewMutation,
   usePostPreviewMutation,
@@ -84,6 +87,7 @@ const PagePreview = () => {
     // Reset all language-specific state when leaving the preview (back button,
     // forward to a different language, or explicit default-language selection).
     return () => {
+      dispatch(setHtml(''));
       dispatch(
         setInitialLayoutModel({
           layout: layoutInitialState.layout,
