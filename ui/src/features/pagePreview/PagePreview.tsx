@@ -3,14 +3,28 @@ import { useErrorBoundary } from 'react-error-boundary';
 import { useLocation, useParams } from 'react-router';
 import { AlertDialog, Button, Flex } from '@radix-ui/themes';
 
-import { useAppSelector } from '@/app/hooks';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
+  selectDevMode,
+  selectIsNew,
+  selectIsPublished,
+  setConfiguration,
+} from '@/features/configuration/configurationSlice';
+import {
+  initialState as layoutInitialState,
   selectLayout,
   selectModel,
   selectUpdatePreview,
+  setInitialLayoutModel,
 } from '@/features/layout/layoutModelSlice';
-import { selectPageData } from '@/features/pageData/pageDataSlice';
-import { selectPreviewHtml } from '@/features/pagePreview/previewSlice';
+import {
+  selectPageData,
+  setInitialPageData,
+} from '@/features/pageData/pageDataSlice';
+import {
+  selectPreviewHtml,
+  setHtml,
+} from '@/features/pagePreview/previewSlice';
 import {
   useGetLanguagePreviewMutation,
   usePostPreviewMutation,
@@ -20,9 +34,13 @@ import { getViewportSizes } from '@/utils/viewports';
 import styles from './PagePreview.module.css';
 
 const PagePreview = () => {
+  const dispatch = useAppDispatch();
   const layout = useAppSelector(selectLayout);
   const updatePreview = useAppSelector(selectUpdatePreview);
   const model = useAppSelector(selectModel);
+  const devMode = useAppSelector(selectDevMode);
+  const isNew = useAppSelector(selectIsNew);
+  const isPublished = useAppSelector(selectIsPublished);
   const entity_form_fields = useAppSelector(selectPageData);
   const frameSrcDoc = useAppSelector(selectPreviewHtml);
   const [postPreview] = usePostPreviewMutation();
@@ -53,7 +71,42 @@ const PagePreview = () => {
     if (!isLanguagePreview || !language || !entityType || !entityId) {
       return;
     }
+    // Ensure baseUrl is set to the language prefix before fetching.
+    dispatch(
+      setConfiguration({
+        baseUrl: `/${language}/`,
+        entityType,
+        entity: entityId,
+        isNew,
+        isPublished,
+        devMode,
+      }),
+    );
     getLanguagePreview({ entityType, entityId }).unwrap().catch(showBoundary);
+
+    // Reset all language-specific state when leaving the preview (back button,
+    // forward to a different language, or explicit default-language selection).
+    return () => {
+      dispatch(setHtml(''));
+      dispatch(
+        setInitialLayoutModel({
+          layout: layoutInitialState.layout,
+          model: layoutInitialState.model,
+          updatePreview: false,
+        }),
+      );
+      dispatch(setInitialPageData({}));
+      dispatch(
+        setConfiguration({
+          baseUrl: '/',
+          entityType: entityType ?? '',
+          entity: entityId ?? '',
+          isNew,
+          isPublished,
+          devMode,
+        }),
+      );
+    };
   }, [
     isLanguagePreview,
     language,
@@ -61,6 +114,10 @@ const PagePreview = () => {
     entityId,
     getLanguagePreview,
     showBoundary,
+    dispatch,
+    isNew,
+    isPublished,
+    devMode,
   ]);
 
   useEffect(() => {

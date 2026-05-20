@@ -1,41 +1,24 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronDownIcon, GlobeIcon } from '@radix-ui/react-icons';
 import { Button, DropdownMenu, Flex, Text } from '@radix-ui/themes';
 
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import {
-  selectDevMode,
-  selectIsNew,
-  selectIsPublished,
-  setConfiguration,
-} from '@/features/configuration/configurationSlice';
-import {
-  initialState as layoutInitialState,
-  setInitialLayoutModel,
-} from '@/features/layout/layoutModelSlice';
-import { setInitialPageData } from '@/features/pageData/pageDataSlice';
-import { setHtml } from '@/features/pagePreview/previewSlice';
-import { componentAndLayoutApi } from '@/services/componentAndLayout';
 import { useGetLanguagesQuery } from '@/services/languages';
 
 const LanguageSelector = () => {
   const { data: languages = [], isLoading } = useGetLanguagesQuery();
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { entityType, entityId, width } = useParams();
-  const dispatch = useAppDispatch();
-  const devMode = useAppSelector(selectDevMode);
-  const isNew = useAppSelector(selectIsNew);
-  const isPublished = useAppSelector(selectIsPublished);
 
-  // Find the default language when data is loaded.
+  // Derive the active language directly from the URL so the dropdown always
+  // reflects the correct language on any navigation, including browser
+  // back/forward, without needing local state or cleanup logic.
+  const activeLanguageId = searchParams.get('language') ?? '';
   const defaultLanguage = languages.find((lang) => lang.isDefault);
   const currentLanguage =
-    selectedLanguage || defaultLanguage?.id || languages[0]?.id || '';
+    activeLanguageId || defaultLanguage?.id || languages[0]?.id || '';
 
   const handleLanguageChange = (languageId: string) => {
-    setSelectedLanguage(languageId);
     const selectedLang = languages.find((lang) => lang.id === languageId);
 
     if (!selectedLang || !entityType || !entityId) {
@@ -43,56 +26,13 @@ const LanguageSelector = () => {
     }
 
     // If selecting the default language, navigate back to editor.
+    // PagePreview's cleanup effect handles resetting baseUrl and clearing
+    // stale language content on unmount.
     if (selectedLang.isDefault) {
-      // Clear the preview HTML to prevent showing stale language content.
-      dispatch(setHtml(''));
-
-      // Reset layout model and page data to clear any language-specific content
-      dispatch(
-        setInitialLayoutModel({
-          layout: layoutInitialState.layout,
-          model: layoutInitialState.model,
-          updatePreview: false,
-        }),
-      );
-      dispatch(setInitialPageData({}));
-
-      dispatch(
-        setConfiguration({
-          baseUrl: '/',
-          entityType,
-          entity: entityId,
-          isNew,
-          isPublished,
-          devMode,
-        }),
-      );
-
-      // Use setTimeout to ensure baseUrl is propagated before invalidation and navigation.
-      setTimeout(() => {
-        // Invalidate cache to force refetch with default language.
-        dispatch(
-          componentAndLayoutApi.util.invalidateTags([{ type: 'Layout' }]),
-        );
-        navigate(`/editor/${entityType}/${entityId}`);
-      }, 0);
+      navigate(`/editor/${entityType}/${entityId}`);
     } else {
-      // For non-default languages, set the baseUrl with language prefix first.
-      dispatch(
-        setConfiguration({
-          baseUrl: `/${languageId}/`,
-          entityType,
-          entity: entityId,
-          isNew,
-          isPublished,
-          devMode,
-        }),
-      );
-
-      // Clear any existing cache for fresh language fetch.
-      dispatch(componentAndLayoutApi.util.invalidateTags([{ type: 'Layout' }]));
-
-      // Navigate to preview with the language info in URL query parameter and state.
+      // Navigate to preview with the language info in URL query parameter and
+      // state. PagePreview's effect handles setting baseUrl and fetching.
       // Preserve the current viewport width, defaulting to 'full' if not set.
       const currentWidth = width || 'full';
       navigate(
