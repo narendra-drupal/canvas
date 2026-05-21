@@ -43,6 +43,7 @@ export interface DrupalSettings {
     personalizationExtensionAvailable: boolean;
     // ⚠️ This is highly experimental and *will* be refactored.
     canvasAiMaxFileSize: number;
+    availableTranslations: string[];
   };
   canvasData: {
     v0: {

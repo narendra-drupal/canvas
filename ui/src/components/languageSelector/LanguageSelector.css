@@ -1,0 +1,77 @@
+.language-selector-dropdown {
+  min-width: 240px;
+  padding: 8px 0;
+}
+
+.language-selector-row {
+  padding: 2px 8px;
+}
+
+.language-selector-item {
+  all: unset;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.language-selector-item:hover {
+  background-color: var(--gray-a3, #f0f0f0);
+}
+
+.language-selector-dots-btn {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--gray-9, #888);
+}
+
+.language-selector-dots-btn:hover {
+  background-color: var(--gray-a3, #f0f0f0);
+  color: var(--gray-12, #111);
+}
+
+.language-selector-popover {
+  min-width: 200px;
+  padding: 12px;
+}
+
+.language-selector-popover-title {
+  color: var(--gray-9, #888);
+  padding: 4px 8px;
+}
+
+.language-selector-popover-item {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.language-selector-popover-item:hover {
+  background-color: var(--gray-a3, #f0f0f0);
+}
+
+.language-selector-popover-item--red {
+  color: white;
+  background-color: var(--red-9, #e5484d);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.language-selector-popover-item--red:hover {
+  background-color: var(--red-10, #dc3d43);
+}
