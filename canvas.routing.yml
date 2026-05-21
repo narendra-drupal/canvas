@@ -445,6 +445,40 @@ canvas.api.entity_translations.get:
   options:
     _format: 'json'
 
+canvas.translation_dashboard:
+  path: '/admin/canvas/translations/canvas_page'
+  defaults:
+    _controller: '\Drupal\canvas\Controller\TranslationDashboardController::overview'
+    _title: 'Canvas Translations'
+    entity_type: canvas_page
+  requirements:
+    _permission: 'translate any entity'
+
+canvas.translation_dashboard.content_template:
+  path: '/admin/canvas/translations/content_template'
+  defaults:
+    _controller: '\Drupal\canvas\Controller\TranslationDashboardController::overview'
+    _title: 'Content Templates'
+    entity_type: content_template
+  requirements:
+    _permission: 'translate any entity'
+
+canvas.translation_dashboard.page_region:
+  path: '/admin/canvas/translations/page_region'
+  defaults:
+    _controller: '\Drupal\canvas\Controller\TranslationDashboardController::overview'
+    _title: 'Page Regions'
+    entity_type: page_region
+  requirements:
+    _permission: 'translate any entity'
+
+canvas.translate_entity:
+  path: '/admin/canvas/translate/{entity_type}/{entity_id}/{target_language}'
+  defaults:
+    _controller: '\Drupal\canvas\Controller\TranslationJobController::translate'
+  requirements:
+    _permission: 'translate any entity'
+
 canvas.api.layout.content_template_draft:
   path: '/canvas/api/v0/layout-content-template-draft/{entity_type}/{preview_entity}'
   defaults:

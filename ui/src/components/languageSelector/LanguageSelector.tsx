@@ -121,7 +121,7 @@ const LanguageSelector = () => {
   const handleTranslate = (languageId: string) => {
     if (entityType && entityId) {
       window.open(
-        `/${languageId}/${entityType}/${entityId}/translations`,
+        `/admin/canvas/translate/${entityType}/${entityId}/${languageId}`,
         '_blank',
       );
     }

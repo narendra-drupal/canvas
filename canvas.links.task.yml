@@ -19,6 +19,21 @@ entity.canvas_page.collection:
   route_name: entity.canvas_page.collection
   base_route: system.admin_content
 
+canvas.translation_dashboard:
+  title: 'Pages'
+  route_name: canvas.translation_dashboard
+  base_route: canvas.translation_dashboard
+
+canvas.translation_dashboard.content_template:
+  title: 'Content Templates'
+  route_name: canvas.translation_dashboard.content_template
+  base_route: canvas.translation_dashboard
+
+canvas.translation_dashboard.page_region:
+  title: 'Page Regions'
+  route_name: canvas.translation_dashboard.page_region
+  base_route: canvas.translation_dashboard
+
 entity.canvas_page.canonical:
   title: 'View'
   route_name: entity.canvas_page.canonical

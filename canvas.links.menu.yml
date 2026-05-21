@@ -7,3 +7,10 @@ navigation.pages:
     icon:
       pack_id: navigation
       icon_id: file
+
+canvas.translation_dashboard:
+  title: 'Canvas Translations'
+  route_name: canvas.translation_dashboard
+  menu_name: admin
+  parent: system.admin_content
+  weight: 10
