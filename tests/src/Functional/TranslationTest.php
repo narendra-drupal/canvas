@@ -520,13 +520,13 @@ class TranslationTest extends FunctionalTestBase {
     $translator->save();
 
     $job = tmgmt_job_create('en', 'fr', $this->rootUser->id());
-    $job->translator = $translator->id();
+    $job->set('translator', $translator->id());
     $job->save();
     $config_name = 'canvas.content_template.node.article.full';
     $job_item = $job->addItem('config', 'content_template', $config_name);
 
     $job->setState(Job::STATE_ACTIVE);
-    $translator->getPlugin()->requestJobItemsTranslation($job->getItems());
+    $translator->getPlugin()->requestTranslation($job);
 
     // Navigate to the TMGMT job item review page.
     $this->drupalLogin($this->rootUser);
