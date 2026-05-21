@@ -28,10 +28,9 @@ test.describe('Language Selector', () => {
     await canvas.waitForEditorUi();
 
     // Language selector button should be visible.
-    const languageButton = page
-      .locator('[data-testid="canvas-topbar"] button')
-      .filter({ hasText: /English/ })
-      .first();
+    const languageButton = page.locator(
+      '[data-testid="canvas-topbar"] [data-testid="language-selector-trigger"]',
+    );
     await expect(languageButton).toBeVisible();
   });
 
@@ -44,15 +43,14 @@ test.describe('Language Selector', () => {
     await page.goto(`/canvas/editor/canvas_page/${canvasPage.entity_id}`);
     await canvas.waitForEditorUi();
 
-    const languageButton = page
-      .locator('[data-testid="canvas-topbar"] button')
-      .filter({ hasText: /English/ })
-      .first();
+    const languageButton = page.locator(
+      '[data-testid="canvas-topbar"] [data-testid="language-selector-trigger"]',
+    );
     await expect(languageButton).toBeVisible();
 
     await languageButton.click();
 
-    const languageOptions = page.locator('[role="menuitem"]');
+    const languageOptions = page.locator('[data-testid^="language-option-"]');
 
     await expect(languageOptions).toHaveCount(3);
   });
@@ -66,18 +64,14 @@ test.describe('Language Selector', () => {
     await page.goto(`/canvas/editor/canvas_page/${canvasPage.entity_id}`);
     await canvas.waitForEditorUi();
 
-    const languageButton = page
-      .locator('[data-testid="canvas-topbar"] button')
-      .filter({ hasText: /English/ })
-      .first();
+    const languageButton = page.locator(
+      '[data-testid="canvas-topbar"] [data-testid="language-selector-trigger"]',
+    );
     await expect(languageButton).toBeVisible();
 
     await languageButton.click();
 
-    const frenchOption = page
-      .locator('[role="menuitem"]')
-      .filter({ hasText: /French/ })
-      .first();
+    const frenchOption = page.locator('[data-testid="language-option-fr"]');
     await expect(frenchOption).toBeVisible();
     await frenchOption.click();
 
@@ -105,18 +99,14 @@ test.describe('Language Selector', () => {
     await page.goto(`/canvas/editor/canvas_page/${canvasPage.entity_id}`);
     await canvas.waitForEditorUi();
 
-    let languageButton = page
-      .locator('[data-testid="canvas-topbar"] button')
-      .filter({ hasText: /English/ })
-      .first();
+    let languageButton = page.locator(
+      '[data-testid="canvas-topbar"] [data-testid="language-selector-trigger"]',
+    );
     await expect(languageButton).toBeVisible();
 
     await languageButton.click();
 
-    const frenchOption = page
-      .locator('[role="menuitem"]')
-      .filter({ hasText: /French/ })
-      .first();
+    const frenchOption = page.locator('[data-testid="language-option-fr"]');
     await expect(frenchOption).toBeVisible();
     await frenchOption.click();
 
@@ -134,23 +124,21 @@ test.describe('Language Selector', () => {
     expect(languageMatch).not.toBeNull();
     expect(languageMatch?.[1]).toBe('fr');
 
-    languageButton = page
-      .locator('[data-testid="canvas-topbar"] button')
-      .filter({ hasText: /French/ })
-      .first();
+    languageButton = page.locator(
+      '[data-testid="canvas-topbar"] [data-testid="language-selector-trigger"]',
+    );
     await expect(languageButton).toBeVisible();
     await languageButton.click();
 
     // Wait for the dropdown menu to open.
-    await page.waitForSelector('[role="menuitem"]', {
+    await page.waitForSelector('[data-testid^="language-option-"]', {
       state: 'visible',
       timeout: 5000,
     });
 
-    const defaultLanguageItem = page
-      .locator('[role="menuitem"]')
-      .filter({ hasText: /Default/ })
-      .first();
+    const defaultLanguageItem = page.locator(
+      '[data-testid="language-option-default"]',
+    );
     await expect(defaultLanguageItem).toBeVisible();
     await defaultLanguageItem.click();
 
@@ -190,17 +178,13 @@ test.describe('Language Selector', () => {
     await page.goto(`/canvas/editor/canvas_page/${pageId}`);
     await canvas.waitForEditorUi();
 
-    const languageButton = page
-      .locator('[data-testid="canvas-topbar"] button')
-      .filter({ hasText: /English/ })
-      .first();
+    const languageButton = page.locator(
+      '[data-testid="canvas-topbar"] [data-testid="language-selector-trigger"]',
+    );
     await expect(languageButton).toBeVisible();
     await languageButton.click();
 
-    const frenchOption = page
-      .locator('[role="menuitem"]')
-      .filter({ hasText: /French/ })
-      .first();
+    const frenchOption = page.locator('[data-testid="language-option-fr"]');
     await expect(frenchOption).toBeVisible();
     await frenchOption.click();
 
@@ -236,17 +220,13 @@ test.describe('Language Selector', () => {
     expect(frameHtmlLang).toMatch(/^fr/i);
 
     // Switch to Spanish language (which has no translation).
-    const frenchButton = page
-      .locator('[data-testid="canvas-topbar"] button')
-      .filter({ hasText: /French/ })
-      .first();
+    const frenchButton = page.locator(
+      '[data-testid="canvas-topbar"] [data-testid="language-selector-trigger"]',
+    );
     await expect(frenchButton).toBeVisible();
     await frenchButton.click();
 
-    const spanishOption = page
-      .locator('[role="menuitem"]')
-      .filter({ hasText: /Spanish/ })
-      .first();
+    const spanishOption = page.locator('[data-testid="language-option-es"]');
     await expect(spanishOption).toBeVisible();
     await spanishOption.click();
 

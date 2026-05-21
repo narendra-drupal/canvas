@@ -52,7 +52,12 @@ const LanguageSelector = () => {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
-        <Button size="2" color="gray" variant="soft">
+        <Button
+          size="2"
+          color="gray"
+          variant="soft"
+          data-testid="language-selector-trigger"
+        >
           <GlobeIcon />
           <Text>{currentLangObj?.name || 'Select Language'}</Text>
           <ChevronDownIcon width="16" height="16" />
@@ -62,6 +67,7 @@ const LanguageSelector = () => {
         {languages.map((language) => (
           <DropdownMenu.Item
             key={language.id}
+            data-testid={`language-option-${language.id}`}
             onSelect={() => handleLanguageChange(language.id)}
           >
             <Flex justify="between" width="100%">
