@@ -1,21 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { useLocation, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { useSearchParams } from 'react-router-dom';
 import { AlertDialog, Button, Flex } from '@radix-ui/themes';
 
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
-  selectDevMode,
-  selectIsNew,
-  selectIsPublished,
-  setConfiguration,
-} from '@/features/configuration/configurationSlice';
-import {
-  initialState as layoutInitialState,
   selectLayout,
   selectModel,
   selectUpdatePreview,
-  setInitialLayoutModel,
 } from '@/features/layout/layoutModelSlice';
 import {
   selectPageData,
@@ -26,7 +19,7 @@ import {
   setHtml,
 } from '@/features/pagePreview/previewSlice';
 import {
-  useGetLanguagePreviewMutation,
+  useGetLanguagePreviewQuery,
   usePostPreviewMutation,
 } from '@/services/preview';
 import { getViewportSizes } from '@/utils/viewports';
@@ -38,15 +31,11 @@ const PagePreview = () => {
   const layout = useAppSelector(selectLayout);
   const updatePreview = useAppSelector(selectUpdatePreview);
   const model = useAppSelector(selectModel);
-  const devMode = useAppSelector(selectDevMode);
-  const isNew = useAppSelector(selectIsNew);
-  const isPublished = useAppSelector(selectIsPublished);
   const entity_form_fields = useAppSelector(selectPageData);
   const frameSrcDoc = useAppSelector(selectPreviewHtml);
   const [postPreview] = usePostPreviewMutation();
-  const [getLanguagePreview] = useGetLanguagePreviewMutation();
   const { entityId, entityType } = useParams();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { showBoundary } = useErrorBoundary();
   const [widthVal, setWidthVal] = useState('100%');
   const { width } = useParams();
@@ -55,75 +44,33 @@ const PagePreview = () => {
   // Get viewport sizes (supports theme-level customization).
   const viewportSizes = useMemo(() => getViewportSizes(), []);
 
-  // Check if this is a language preview.
-  const locationState = location.state as {
-    isLanguagePreview?: boolean;
-    language?: string;
-  } | null;
-  const isLanguagePreview = locationState?.isLanguagePreview || false;
-  const language = locationState?.language;
+  // Derive the active language directly from the URL search params.
+  const language = searchParams.get('language') ?? '';
 
+  // Language preview: auto-fetch whenever language/entity changes.
+  useGetLanguagePreviewQuery(
+    { entityType: entityType!, entityId: entityId!, language },
+    {
+      skip: !language || !entityType || !entityId,
+      refetchOnMountOrArgChange: true,
+    },
+  );
+
+  // Reset language-specific Redux state when leaving the preview.
+  // Layout/model are intentionally not reset here — LayoutLoader re-fetches
+  // them when navigating back to the editor.
   useEffect(() => {
-    // Language preview: fetch once on mount (or when language/entity changes).
-    // Intentionally excludes layout/model from deps — getLanguagePreview dispatches
-    // setLayoutModel on success, which would otherwise re-trigger this effect
-    // and cause an infinite request loop.
-    if (!isLanguagePreview || !language || !entityType || !entityId) {
-      return;
-    }
-    // Ensure baseUrl is set to the language prefix before fetching.
-    dispatch(
-      setConfiguration({
-        baseUrl: `/${language}/`,
-        entityType,
-        entity: entityId,
-        isNew,
-        isPublished,
-        devMode,
-      }),
-    );
-    getLanguagePreview({ entityType, entityId }).unwrap().catch(showBoundary);
-
-    // Reset all language-specific state when leaving the preview (back button,
-    // forward to a different language, or explicit default-language selection).
+    if (!language) return;
     return () => {
       dispatch(setHtml(''));
-      dispatch(
-        setInitialLayoutModel({
-          layout: layoutInitialState.layout,
-          model: layoutInitialState.model,
-          updatePreview: false,
-        }),
-      );
       dispatch(setInitialPageData({}));
-      dispatch(
-        setConfiguration({
-          baseUrl: '/',
-          entityType: entityType ?? '',
-          entity: entityId ?? '',
-          isNew,
-          isPublished,
-          devMode,
-        }),
-      );
     };
-  }, [
-    isLanguagePreview,
-    language,
-    entityType,
-    entityId,
-    getLanguagePreview,
-    showBoundary,
-    dispatch,
-    isNew,
-    isPublished,
-    devMode,
-  ]);
+  }, [language, dispatch]);
 
   useEffect(() => {
     // Normal preview: fire when editor content changes.
     // Skip entirely during language preview to avoid conflicting requests.
-    if (isLanguagePreview || !updatePreview || !entityType || !entityId) {
+    if (language || !updatePreview || !entityType || !entityId) {
       return;
     }
     postPreview({ layout, model, entity_form_fields, entityId, entityType })
@@ -138,7 +85,7 @@ const PagePreview = () => {
     entityType,
     updatePreview,
     showBoundary,
-    isLanguagePreview,
+    language,
   ]);
 
   useEffect(() => {
@@ -154,6 +101,8 @@ const PagePreview = () => {
     }
   }, [width, viewportSizes]);
 
+  // Register the preview link/form intercept listener once (empty deps array
+  // prevents re-registering on every render).
   useEffect(() => {
     function handlePreviewLinkClick(event: MessageEvent) {
       if (event.data && event.data.canvasPreviewClickedUrl) {
@@ -168,7 +117,7 @@ const PagePreview = () => {
     return () => {
       window.removeEventListener('message', handlePreviewLinkClick);
     };
-  });
+  }, []);
 
   const handleDialogOpenChange = (isOpen: boolean) => {
     if (!isOpen) {

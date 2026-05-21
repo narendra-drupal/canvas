@@ -90,15 +90,16 @@ export const previewApi = createApi({
         }
       },
     }),
-    getLanguagePreview: builder.mutation<
+    getLanguagePreview: builder.query<
       { html: string; layout: RegionNode[]; model: ComponentModels },
       {
         entityType: string;
         entityId: string;
+        language: string;
       }
     >({
-      query: ({ entityType, entityId }) => ({
-        url: `canvas/api/v0/layout/${entityType}/${entityId}`,
+      query: ({ entityType, entityId, language }) => ({
+        url: `${language}/canvas/api/v0/layout/${entityType}/${entityId}`,
         method: 'GET',
       }),
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
@@ -163,7 +164,7 @@ export const previewApi = createApi({
 
 export const {
   usePostPreviewMutation,
-  useGetLanguagePreviewMutation,
+  useGetLanguagePreviewQuery,
   useUpdateComponentMutation,
 } = previewApi;
 
