@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\canvas\Kernel\Controller;
 
-use Drupal\Core\Http\Exception\CacheableAccessDeniedHttpException;
 use Drupal\canvas\Controller\ApiLanguageController;
 use Drupal\canvas\Entity\ContentTemplate;
+use Drupal\Core\Http\Exception\CacheableAccessDeniedHttpException;
 use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\Tests\canvas\Kernel\CanvasKernelTestBase;
 use Drupal\Tests\canvas\Kernel\Traits\RequestTrait;
