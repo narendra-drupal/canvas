@@ -56,9 +56,8 @@ const PagePreview = () => {
     },
   );
 
-  // Reset language-specific Redux state when leaving the preview.
-  // Layout/model are intentionally not reset here — LayoutLoader re-fetches
-  // them when navigating back to the editor.
+  // Clear the language preview HTML and page data when leaving the preview
+  // so stale translated content is not shown if the user navigates back.
   useEffect(() => {
     if (!language) return;
     return () => {

@@ -72,7 +72,7 @@ const PageStatus = () => {
   // skipToken prevents the query from running until both args are defined.
   // "Pass skipToken to a query selector to have that selector return an uninitialized state."
   // Pass language so the query fetches translated content when on a language preview route,
-  // preventing the English response from overwriting language-specific HTML in Redux.
+  // preventing the response from overwriting language-specific HTML in Redux.
   const { data: fetchedLayout, isError } = useGetPageLayoutQuery(
     entityId && entityType ? { entityId, entityType, language } : skipToken,
   );
