@@ -114,6 +114,11 @@ final class ComponentInputsConfigProcessor extends DefaultConfigProcessor {
   }
 
   private static function extractTranslatablesFromStructuredArray(array $config_data_for_input_key, array $translatable_for_input_key): array {
+    // @todo When https://drupal.org/i/3584178 adds an alter hook to allow other
+    //   prop shapes to be translatable, this method may need updating to handle
+    //   additional structured array storage formats beyond {value,format} and
+    //   {uri,options}.
+    // @see https://git.drupalcode.org/project/canvas/-/merge_requests/1099#note_827562
     // Rich prose. Either in a StaticPropSource or in config schema.
     // @see `type: text_format`
     // @see \Drupal\canvas\PropShape\PropShape::isPlainOrRichProse()
