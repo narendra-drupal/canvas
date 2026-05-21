@@ -103,12 +103,16 @@ export const previewApi = createApi({
         method: 'GET',
       }),
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        const { data } = await queryFulfilled;
-        const { html, layout, model } = data;
-        // Update our preview slice with the language-specific HTML.
-        dispatch(setHtml(html));
-        // Also update the layout model so everything stays in sync.
-        dispatch(setLayoutModel({ layout, model, updatePreview: false }));
+        try {
+          const { data } = await queryFulfilled;
+          const { html, layout, model } = data;
+          // Update our preview slice with the language-specific HTML.
+          dispatch(setHtml(html));
+          // Also update the layout model so everything stays in sync.
+          dispatch(setLayoutModel({ layout, model, updatePreview: false }));
+        } catch {
+          // Errors are surfaced via the query's isError/error state.
+        }
       },
     }),
     updateComponent: builder.mutation<
