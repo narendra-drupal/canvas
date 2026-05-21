@@ -6,6 +6,7 @@ namespace Drupal\canvas_dev_translation\Hook;
 
 use Drupal\canvas\Entity\ContentTemplate;
 use Drupal\canvas\Entity\PageRegion;
+use Drupal\canvas\Tmgmt\ComponentInputsConfigProcessor;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\Hook\Order\OrderBefore;
@@ -31,6 +32,24 @@ readonly final class ConfigTranslationSupportHooks {
         // a `config-translation-overview` link template.
         // @see \Drupal\config_translation\Hook\ConfigTranslationHooks::entityTypeAlter()
         $definitions[$entity_type]->setLinkTemplate('edit-form', $edit_link);
+      }
+    }
+  }
+
+  /**
+   * Implements hook_config_schema_info_alter().
+   */
+  #[Hook('config_schema_info_alter')]
+  public static function configSchemaInfoAlter(array &$definitions): void {
+    // 'canvas.pattern.*' is intentionally left out of this list as patterns are
+    // not translatable.
+    $types_with_component_trees = [
+      'canvas.content_template.*.*.*',
+      'canvas.page_region.*',
+    ];
+    foreach ($types_with_component_trees as $types_with_component_tree) {
+      if (isset($definitions[$types_with_component_tree])) {
+        $definitions[$types_with_component_tree]['tmgmt_config_processor'] = ComponentInputsConfigProcessor::class;
       }
     }
   }

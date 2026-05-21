@@ -30,6 +30,8 @@ use Drupal\Tests\ApiRequestTrait;
 use Drupal\Tests\canvas\Traits\ConstraintViolationsTestTrait;
 use Drupal\Tests\canvas\Traits\DataProviderWithComponentTreeTrait;
 use Drupal\Tests\content_translation\Traits\ContentTranslationTestTrait;
+use Drupal\tmgmt\Entity\Job;
+use Drupal\tmgmt\Entity\Translator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -444,6 +446,145 @@ class TranslationTest extends FunctionalTestBase {
 
     self::assertArrayNotHasKey('heading', $override->getRawData()['component_tree']['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1']['inputs']);
     self::assertArrayNotHasKey(3, $override->getRawData()['component_tree']);
+  }
+
+  /**
+   * Tests the ComponentInputsConfigProcessor via the TMGMT UI.
+   *
+   * Exercises all edge cases the processor handles:
+   * - plain prose, single-cardinality
+   * - rich prose (value + format)
+   * - URI-esque (uri + options)
+   * - multiple-cardinality (array of strings)
+   *
+   * @see \Drupal\canvas\Tmgmt\ComponentInputsConfigProcessor
+   */
+  public function testComponentInputsConfigProcessor(): void {
+    $module_installer = $this->container->get('module_installer');
+    \assert($module_installer instanceof ModuleInstallerInterface);
+    $module_installer->install(['tmgmt', 'tmgmt_config', 'tmgmt_test', 'canvas_dev_translation']);
+    $this->rebuildContainer();
+
+    // Delete the template created in setUp() to start fresh.
+    $existing_template = ContentTemplate::load('node.article.full');
+    if ($existing_template instanceof ContentTemplate) {
+      $existing_template->delete();
+    }
+
+    // Create a ContentTemplate exercising all processor edge cases.
+    $template = ContentTemplate::create([
+      'content_entity_type_id' => 'node',
+      'content_entity_type_bundle' => 'article',
+      'content_entity_type_view_mode' => 'full',
+      'component_tree' => self::populateActiveComponentVersionPlaceholders([
+        [
+          'uuid' => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          'component_id' => 'sdc.canvas_test_sdc.tags',
+          'component_version' => '::ACTIVE_VERSION_IN_SUT::',
+          'inputs' => [
+            'tags' => ['baz', 'bar', 'foo'],
+          ],
+        ],
+        [
+          'uuid' => 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          'component_id' => 'sdc.canvas_test_sdc.my-cta',
+          'component_version' => '::ACTIVE_VERSION_IN_SUT::',
+          'inputs' => [
+            'text' => 'Press',
+            'href' => [
+              'uri' => 'https://www.drupal.org',
+              'options' => [],
+            ],
+          ],
+        ],
+        [
+          'uuid' => 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          'component_id' => 'sdc.canvas_test_sdc.banner',
+          'component_version' => '::ACTIVE_VERSION_IN_SUT::',
+          'inputs' => [
+            'heading' => 'A heading element! :)',
+            'text' => [
+              'value' => '<p>In a curious work, published in <em>Paris</em> in 1863 by <strong>Delaville Dedreux</strong>, there is a suggestion for reaching the North Pole by an aerostat.</p>',
+              'format' => 'canvas_html_block',
+            ],
+          ],
+        ],
+      ]),
+    ]);
+    $violations = $template->getTypedData()->validate();
+    self::assertSame([], self::violationsToArray($violations), $template->getConfigTarget());
+    $template->save();
+
+    // Create a TMGMT translator and job for the config entity.
+    $translator = Translator::create([
+      'name' => 'test_tmgmt',
+      'label' => 'Test TMGMT',
+      'plugin' => 'test_translator',
+      'remote_languages_mappings' => [],
+      'settings' => ['key' => 'test', 'another_key' => 'test'],
+    ]);
+    $translator->save();
+
+    $job = tmgmt_job_create('en', 'fr', $this->rootUser->id());
+    $job->set('translator', $translator->id());
+    $job->save();
+    $config_name = 'canvas.content_template.node.article.full';
+    $job_item = $job->addItem('config', 'content_template', $config_name);
+
+    $job->setState(Job::STATE_ACTIVE);
+    $translator->getPlugin()->requestTranslation($job);
+
+    // Navigate to the TMGMT job item review page.
+    $this->drupalLogin($this->rootUser);
+    $this->drupalGet('admin/tmgmt/items/' . $job_item->id());
+    $assert = $this->assertSession();
+    $assert->statusCodeEquals(200);
+
+    // Assert source texts are visible for all edge cases.
+    // Multiple-cardinality: each tag shown individually.
+    $assert->pageTextContains('baz');
+    $assert->pageTextContains('bar');
+    $assert->pageTextContains('foo');
+    // Plain prose.
+    $assert->pageTextContains('Press');
+    // URI-esque: only the URI is extracted, not the options array.
+    $assert->pageTextContains('https://www.drupal.org');
+    // Banner plain prose.
+    $assert->pageTextContains('A heading element! :)');
+    // Rich prose: only the value is extracted, not the format.
+    $assert->pageTextContains('In a curious work, published in');
+
+    // Assert translations generated by test_translator (prefix: "fr: ").
+    $assert->pageTextContains('fr: baz');
+    $assert->pageTextContains('fr: bar');
+    $assert->pageTextContains('fr: foo');
+    $assert->pageTextContains('fr: Press');
+    $assert->pageTextContains('fr: https://www.drupal.org');
+    $assert->pageTextContains('fr: A heading element! :)');
+
+    // Submit the translation as completed.
+    $this->submitForm([], 'Save as completed');
+    $assert->pageTextContains('has been accepted');
+
+    // Verify the LanguageConfigOverride stores the correct translated values.
+    $language_manager = $this->container->get(LanguageManagerInterface::class);
+    self::assertInstanceOf(ConfigurableLanguageManagerInterface::class, $language_manager);
+    $override = $language_manager->getLanguageConfigOverride('fr', $config_name);
+    self::assertFalse($override->isNew());
+    $raw_data = $override->getRawData();
+
+    // Multiple-cardinality: tags translated as indexed array.
+    self::assertSame(['fr: baz', 'fr: bar', 'fr: foo'], $raw_data['component_tree']['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa']['inputs']['tags']);
+    // Plain prose: text translated.
+    self::assertSame('fr: Press', $raw_data['component_tree']['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb']['inputs']['text']);
+    // URI-esque: only uri key translated.
+    self::assertSame('fr: https://www.drupal.org', $raw_data['component_tree']['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb']['inputs']['href']['uri']);
+    self::assertArrayNotHasKey('options', $raw_data['component_tree']['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb']['inputs']['href']);
+    // Plain prose: heading translated.
+    self::assertSame('fr: A heading element! :)', $raw_data['component_tree']['cccccccc-cccc-4ccc-8ccc-cccccccccccc']['inputs']['heading']);
+    // Rich prose: only value translated, format not stored in override.
+    self::assertSame('fr: <p>In a curious work, published in <em>Paris</em> in 1863 by <strong>Delaville Dedreux</strong>, there is a suggestion for reaching the North Pole by an aerostat.</p>', $raw_data['component_tree']['cccccccc-cccc-4ccc-8ccc-cccccccccccc']['inputs']['text']['value']);
+    self::assertArrayNotHasKey('format', $raw_data['component_tree']['cccccccc-cccc-4ccc-8ccc-cccccccccccc']['inputs']['text']);
   }
 
   /**
