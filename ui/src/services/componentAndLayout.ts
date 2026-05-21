@@ -174,10 +174,14 @@ export const componentAndLayoutApi = createApi({
     }),
     getPageLayout: builder.query<
       LayoutApiResponse,
-      { entityId: string; entityType: string }
+      { entityId: string; entityType: string; language?: string }
     >({
-      query: ({ entityId, entityType }) => {
-        return `canvas/api/v0/layout/${entityType}/${entityId}`;
+      query: ({ entityId, entityType, language }) => {
+        // When a language code is provided, prefix the URL so Drupal serves
+        // the translated content for that language.
+        return language
+          ? `${language}/canvas/api/v0/layout/${entityType}/${entityId}`
+          : `canvas/api/v0/layout/${entityType}/${entityId}`;
       },
       providesTags: () => [{ type: 'Layout' }],
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
