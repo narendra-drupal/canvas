@@ -424,6 +424,25 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
   /**
    * {@inheritdoc}
    */
+  public function mergeExplicitInputWithDefault(array $default_explicit_input, array $explicit_input): array {
+    // Inputs are structured as ['resolved' => [...], 'source' => [...]].
+    // Merge per-prop within 'resolved' so non-translatable props from the
+    // default translation fill in any gaps in the non-default translation.
+    // @todo If/when Canvas' UI gains the ability to edit symmetrically
+    //   translated component instances, 'source' will also need per-prop merge.
+    if (isset($default_explicit_input['resolved'])) {
+      foreach ($default_explicit_input['resolved'] as $prop => $resolved_value) {
+        if (!isset($explicit_input['resolved'][$prop])) {
+          $explicit_input['resolved'][$prop] = $resolved_value;
+        }
+      }
+    }
+    return $explicit_input;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function hydrateComponent(array $explicit_input, array $slot_definitions, array $active_required_explicit_inputs): array {
     $hydrated[self::EXPLICIT_INPUT_NAME] = $explicit_input['resolved'];
     \assert(Inspector::assertAllObjects($explicit_input['resolved'], EvaluationResult::class));
@@ -710,6 +729,7 @@ abstract class GeneratedFieldExplicitInputUxComponentSourceBase extends Componen
       // Deconstruct the multi-part exception message constructed by SDC.
       // @see \Drupal\Core\Theme\Component\ComponentValidator::validateProps()
       $errors = explode("\n", $e->getMessage());
+
       foreach ($errors as $error) {
         // An example error:
         // phpcs:disable Drupal.Files.LineLength.TooLong

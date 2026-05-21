@@ -161,6 +161,12 @@ interface ComponentSourceInterface extends PluginInspectionInterface, Derivative
   /**
    * Retrieves the component instance's explicit (possibly empty) input.
    *
+   * Returns only the values actually stored for this component instance.
+   * For non-default translations this means only the translatable inputs are
+   * present; callers that need a fully populated result should use
+   * ::getResolvedExplicitInput() or
+   * ComponentTreeItemList::mergeWithDefaultTranslation().
+   *
    * @param \Drupal\Core\Entity\FieldableEntityInterface|null $host_entity
    *   Host entity. Required when a component instance has inputs populated by
    *   EntityFieldPropSources AND the parent entity of $item is not the host
@@ -179,13 +185,26 @@ interface ComponentSourceInterface extends PluginInspectionInterface, Derivative
    * values. For component sources that return flat values from
    * ::getExplicitInput(), this returns those values as-is.
    *
+   * When $host_entity is a non-default translation, non-translatable inputs
+   * are merged from the default translation so callers receive a fully
+   * populated, render-ready result.
+   *
    * @param \Drupal\Core\Entity\FieldableEntityInterface|null $host_entity
    *   Host entity. Required when a component instance has inputs populated by
    *   EntityFieldPropSources AND the parent entity of $item is not the host
-   *   entity to use during evaluation of the EntityFieldPropSources.
-   *   (Typically: when this is a component instance in a ContentTemplate.)
+   *   entity to use during evaluation of the EntityFieldPropSources
+   *   (typically: a ContentTemplate). Also used to merge non-translatable
+   *   inputs from the default translation for non-default translations.
    */
   public function getResolvedExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array;
+
+  /**
+   * Merges default-translation explicit input with a non-default translation's.
+   *
+   * Sources that return structured input (e.g. with 'resolved'/'source' keys)
+   * must override this to merge per-prop rather than per-key.
+   */
+  public function mergeExplicitInputWithDefault(array $default_explicit_input, array $explicit_input): array;
 
   /**
    * Hydrates a component with its explicit input plus slots (if any).

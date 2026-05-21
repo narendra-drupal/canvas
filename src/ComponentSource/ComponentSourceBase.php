@@ -6,6 +6,7 @@ namespace Drupal\canvas\ComponentSource;
 
 use Drupal\canvas\Entity\Component;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
+use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Config\Schema\Mapping;
 use Drupal\Core\Config\TypedConfigManagerInterface;
@@ -142,7 +143,7 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
    * {@inheritdoc}
    */
   public function getResolvedExplicitInput(string $uuid, ComponentTreeItem $item, ?FieldableEntityInterface $host_entity = NULL): array {
-    $explicit_input = $this->getExplicitInput($uuid, $item, $host_entity);
+    $explicit_input = ComponentTreeItemList::mergeWithDefaultTranslation($this, $uuid, $item, $host_entity, $this->getExplicitInput($uuid, $item, $host_entity));
     $component = $item->getComponent();
     \assert($component instanceof Component);
     $required_props_with_default_values_in_current_implementation = $component
@@ -160,6 +161,13 @@ abstract class ComponentSourceBase extends PluginBase implements ComponentSource
       // implementation).
       active_required_explicit_inputs: $required_props_with_default_values_in_current_implementation,
     );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function mergeExplicitInputWithDefault(array $default_explicit_input, array $explicit_input): array {
+    return array_merge($default_explicit_input, $explicit_input);
   }
 
   /**

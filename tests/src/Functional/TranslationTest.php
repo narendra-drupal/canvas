@@ -10,6 +10,8 @@ use Drupal\canvas\Entity\Component;
 use Drupal\canvas\Entity\ContentTemplate;
 use Drupal\canvas\Entity\Page;
 use Drupal\canvas\Entity\PageRegion;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\canvas\Plugin\DataType\ComponentInputs;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItemList;
 use Drupal\canvas\PropSource\PropSource;
@@ -22,6 +24,8 @@ use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\language\Entity\ContentLanguageSettings;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
+use Drupal\tmgmt\Entity\Job;
+use Drupal\tmgmt\Entity\Translator;
 use Drupal\Tests\ApiRequestTrait;
 use Drupal\Tests\canvas\Traits\ConstraintViolationsTestTrait;
 use Drupal\Tests\canvas\Traits\DataProviderWithComponentTreeTrait;
@@ -171,11 +175,13 @@ class TranslationTest extends FunctionalTestBase {
    * @see \Drupal\Tests\canvas\Kernel\Config\ContentTemplateTest::testTranslationLifeCycleInDepth()
    */
   public function testContentTemplateTranslationRendered(): void {
+    $this->setFieldTranslatable(['inputs']);
+
     $template = ContentTemplate::load('node.article.full');
     self::assertNotNull($template);
     $template->setStatus(TRUE)->save();
 
-    $original_node = $this->createCanvasNodeWithTranslation();
+    $original_node = $this->createCanvasNodeWithTranslation(['inputs']);
     $this->assertTrue($original_node->isDefaultTranslation());
     $translated_node = $original_node->getTranslation('fr');
     $this->assertSame('The French title', (string) $translated_node->getTitle());
@@ -476,7 +482,6 @@ class TranslationTest extends FunctionalTestBase {
    */
   #[DataProvider('canvasFieldTranslationDataProvider')]
   public function testCanvasFieldTranslation(array $translatable_properties, bool $expect_component_removed_on_translation): void {
-    $page = $this->getSession()->getPage();
     $assert_session = $this->assertSession();
     $language_manager = $this->container->get(LanguageManagerInterface::class);
     \assert($language_manager instanceof ConfigurableLanguageManagerInterface);
@@ -491,22 +496,9 @@ class TranslationTest extends FunctionalTestBase {
 
     $field_is_translatable = !empty($translatable_properties);
 
-    $this->drupalGet('admin/config/regional/content-language');
-    if ($field_is_translatable) {
-      $page->checkField('settings[node][article][fields][field_canvas_test]');
-      foreach (['tree', 'inputs'] as $field_property) {
-        \in_array($field_property, $translatable_properties, TRUE)
-          ? $page->checkField("settings[node][article][columns][field_canvas_test][$field_property]")
-          : $page->uncheckField("settings[node][article][columns][field_canvas_test][$field_property]");
-      }
-    }
-    else {
-      $page->uncheckField('settings[node][article][fields][field_canvas_test]');
-    }
+    $this->setFieldTranslatable($translatable_properties);
 
-    $page->pressButton('Save configuration');
-    $this->assertSession()->pageTextContains('Settings successfully updated.');
-    $original_node = $this->createCanvasNodeWithTranslation();
+    $original_node = $this->createCanvasNodeWithTranslation($translatable_properties);
     $this->assertTrue($original_node->isDefaultTranslation());
     $translated_node = $original_node->getTranslation('fr');
     $this->assertSame('The French title', (string) $translated_node->getTitle());
@@ -572,12 +564,156 @@ class TranslationTest extends FunctionalTestBase {
   }
 
   /**
+   * Tests that non-translatable properties cannot be saved in translations.
+   *
+   * Uses the 'my-cta' SDC which has:
+   * - text: type: string (translatable)
+   * - href: type: string, format: uri (translatable)
+   * - target: type: string, enum: [_self, _blank] (NOT translatable — enums)
+   *
+   * @see \Drupal\canvas\ComponentSource\ComponentSourceBase::validateComponentInput()
+   * @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys()
+   * @see \Drupal\canvas\ComponentSource\ComponentSourceBase::getExplicitInput()
+   * @see https://www.drupal.org/project/canvas/issues/3583684
+   */
+  public function testInvalidTranslationProps(): void {
+    $this->setFieldTranslatable(['inputs']);
+
+    $cta_uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+    $component = Component::load('sdc.canvas_test_sdc.my-cta');
+    self::assertNotNull($component);
+    $version = $component->getActiveVersion();
+
+    $node = Node::create([
+      'type' => 'article',
+      'title' => 'Test node',
+      'field_canvas_test' => [
+        [
+          'uuid' => $cta_uuid,
+          'component_id' => 'sdc.canvas_test_sdc.my-cta',
+          'component_version' => $version,
+          'inputs' => [
+            'text' => 'Click here',
+            'href' => 'https://drupal.org',
+            'target' => '_self',
+          ],
+        ],
+      ],
+    ]);
+    $node->save();
+
+    // Reload so addTranslation() can properly synchronize field values.
+    $node = Node::load($node->id());
+    self::assertNotNull($node);
+
+    // Verify which keys are translatable per the config schema.
+    $list = $node->get('field_canvas_test');
+    \assert($list instanceof ComponentTreeItemList);
+    $cta = $list->getComponentTreeItemByUuid($cta_uuid);
+    \assert($cta instanceof ComponentTreeItem);
+    $inputs_typed_data = $cta->get('inputs');
+    \assert($inputs_typed_data instanceof ComponentInputs);
+    $translatable_keys = $inputs_typed_data->getTranslatableInputKeys();
+    self::assertContains('text', $translatable_keys);
+    self::assertNotContains('target', $translatable_keys, 'enum prop should not be translatable');
+
+    $translation = $node->addTranslation('fr');
+    $this->container->get('content_translation.manager')
+      ->getTranslationMetadata($translation)
+      ->setSource($node->language()->getId());
+    // @phpstan-ignore-next-line
+    $translation->title = 'French title';
+    // Attempt to set 'target' which is not a translatable property.
+    $translation->set('field_canvas_test', [
+      [
+        'uuid' => $cta_uuid,
+        'component_id' => 'sdc.canvas_test_sdc.my-cta',
+        'component_version' => $version,
+        'inputs' => [
+          'text' => 'Cliquez ici',
+          'href' => 'https://drupal.fr',
+          'target' => '_self',
+        ],
+      ],
+    ]);
+    self::assertSame(['field_canvas_test.0.inputs.target' => 'non-translatable keys are not allow in translation'], self::violationsToArray($translation->validate()));
+
+    // Ensure saving directly also produces an exception.
+    try {
+      $translation->save();
+      $this->fail('Expected to fail.');
+    }
+    catch (EntityStorageException $e) {
+      self::assertSame('field_canvas_test.inputs.a1b2c3d4-e5f6-7890-abcd-ef1234567890.target: non-translatable keys are not allow in translation', $e->getMessage());
+    }
+
+    // Remove 'target' leaving only translatable properties.
+    $translation->set('field_canvas_test', [
+      [
+        'uuid' => $cta_uuid,
+        'component_id' => 'sdc.canvas_test_sdc.my-cta',
+        'component_version' => $version,
+        'inputs' => [
+          'text' => 'Cliquez ici',
+          'href' => 'https://drupal.fr',
+        ],
+      ],
+    ]);
+    self::assertSame([], self::violationsToArray($translation->validate()));
+    $translation->save();
+
+    // Reload and verify non-translatable 'target' is not stored in the
+    // translation's inputs.
+    $node = Node::load($node->id());
+    self::assertNotNull($node);
+    $fr_node = $node->getTranslation('fr');
+    $fr_list = $fr_node->get('field_canvas_test');
+    \assert($fr_list instanceof ComponentTreeItemList);
+    $fr_cta = $fr_list->getComponentTreeItemByUuid($cta_uuid);
+    \assert($fr_cta instanceof ComponentTreeItem);
+    $fr_stored_inputs = $fr_cta->getInputs();
+    self::assertIsArray($fr_stored_inputs);
+    self::assertArrayHasKey('text', $fr_stored_inputs);
+    self::assertSame('Cliquez ici', $fr_stored_inputs['text']);
+    self::assertArrayNotHasKey('target', $fr_stored_inputs, 'Non-translatable target should have been stripped on save');
+
+    // Now update the non-translatable 'target' on the default translation.
+    $en_node = $node->getTranslation('en');
+    $en_list = $en_node->get('field_canvas_test');
+    \assert($en_list instanceof ComponentTreeItemList);
+    $en_cta = $en_list->getComponentTreeItemByUuid($cta_uuid);
+    \assert($en_cta instanceof ComponentTreeItem);
+    $en_cta->setInput([
+      'text' => 'Click here',
+      'href' => 'https://drupal.org',
+      'target' => '_blank',
+    ]);
+    $en_node->save();
+
+    // Verify the French translation's merge-on-read picks up the updated
+    // non-translatable 'target' from the default translation.
+    $node = Node::load($node->id());
+    self::assertNotNull($node);
+    $fr_node = $node->getTranslation('fr');
+    $fr_list = $fr_node->get('field_canvas_test');
+    \assert($fr_list instanceof ComponentTreeItemList);
+    $fr_cta = $fr_list->getComponentTreeItemByUuid($cta_uuid);
+    \assert($fr_cta instanceof ComponentTreeItem);
+    $component_source = $fr_cta->getComponent()?->getComponentSource();
+    self::assertNotNull($component_source);
+    $resolved = $component_source->getResolvedExplicitInput($cta_uuid, $fr_cta, $fr_node);
+    self::assertSame('Cliquez ici', $resolved['text']->value, 'Translated text should be preserved');
+    self::assertSame('https://drupal.fr', $resolved['href']->value, 'Translated href should be preserved');
+    self::assertSame('_blank', $resolved['target']->value, 'Updated non-translatable target should be merged from default');
+  }
+
+  /**
    * Creates an article node with a translation.
    *
    * @return \Drupal\node\Entity\Node
    *   The default translation of the node.
    */
-  protected function createCanvasNodeWithTranslation(): Node {
+  protected function createCanvasNodeWithTranslation(array $translatable_properties): Node {
     $node = $this->createTestNode();
     $list = $node->get('field_canvas_test');
     \assert($list instanceof ComponentTreeItemList);
@@ -590,6 +726,8 @@ class TranslationTest extends FunctionalTestBase {
     $this->container->get('content_translation.manager')->getTranslationMetadata($translation)->setSource($node->language()->getId());
     // @phpstan-ignore-next-line
     $translation->title = 'The French title';
+    $violation_list = $translation->validate();
+    $this->assertCount(0, $violation_list, (string) $violation_list);
     $translation->save();
     $translation = $node->getTranslation('fr');
     $updated_item = $list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
@@ -601,6 +739,11 @@ class TranslationTest extends FunctionalTestBase {
     // translation.
     $french_inputs = $updated_item_inputs;
     $french_inputs['heading'] = 'bonjour, monde!';
+    if ($translatable_properties === ['inputs']) {
+      // `attributes` should also not be translatable.
+      unset($french_inputs['attributes']);
+    }
+
     $french_list = $translation->get('field_canvas_test');
     \assert($french_list instanceof ComponentTreeItemList);
     $french_item = $french_list->getComponentTreeItemByUuid('208452de-10d6-4fb8-89a1-10e340b3744c');
@@ -1146,7 +1289,101 @@ class TranslationTest extends FunctionalTestBase {
 
     // English PageRegion text must appear because no Hindi translation exists.
     $this->assertSession()->pageTextContains('Hello from region');
+  }
 
+  public function testTmgmtComponentTreeFieldProcessor(): void {
+    // Install TMGMT after other modules — rebuildContainer() triggers
+    // ShapeMatchingHooks::fieldInfoAlter() with tmgmt_content present,
+    // registering ComponentTreeFieldProcessor for component_tree fields.
+    $module_installer = $this->container->get(ModuleInstallerInterface::class);
+    $module_installer->install(['tmgmt', 'tmgmt_content', 'tmgmt_test']);
+    $this->rebuildContainer();
+
+    // Enable content translation for canvas_page so TMGMT content source
+    // can create French translations.
+    $this->enableContentTranslation('canvas_page', 'canvas_page');
+
+    $component_uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+    $component = Component::load('sdc.canvas_test_sdc.required-plain-string');
+    self::assertNotNull($component);
+    $canvas_page = Page::create([
+      'title' => 'TMGMT test page',
+      'components' => [[
+        'uuid' => $component_uuid,
+        'component_id' => 'sdc.canvas_test_sdc.required-plain-string',
+        'component_version' => $component->getActiveVersion(),
+        'inputs' => [
+          'title' => 'Click here',
+        ],
+      ],
+      ],
+    ]);
+    $canvas_page->save();
+    $page_id = $canvas_page->id();
+
+    // TestTranslator::getSupportedTargetLanguages() excludes 'fr', so bypass
+    // requestTranslation() and call requestJobItemsTranslation() directly.
+    $translator = Translator::create([
+      'name' => 'test_tmgmt',
+      'label' => 'Test TMGMT',
+      'plugin' => 'test_translator',
+      'remote_languages_mappings' => [],
+      'settings' => ['key' => 'test', 'another_key' => 'test'],
+    ]);
+    $translator->save();
+
+    $job = tmgmt_job_create('en', 'fr', $this->rootUser->id());
+    $job->translator = $translator->id();
+    $job->save();
+    $job_item = $job->addItem('content', 'canvas_page', $page_id);
+
+    $job->setState(Job::STATE_ACTIVE);
+    $translator->getPlugin()->requestJobItemsTranslation($job->getItems());
+
+    $this->drupalLogin($this->rootUser);
+    $this->drupalGet('admin/tmgmt/items/' . $job_item->id());
+    $assert = $this->assertSession();
+    $assert->statusCodeEquals(200);
+    // extractTranslatableData() surfaces the 'text' prop value as source text.
+    $assert->pageTextContains('Click here');
+    // TestTranslator prefixes translations: "fr: {original}".
+    $assert->pageTextContains('fr: Click here');
+
+    $this->submitForm([], 'Save as completed');
+    $assert->pageTextContains(\sprintf('The translation for %s has been accepted', $canvas_page->label()));
+
+    $canvas_page = Page::load($page_id);
+    self::assertNotNull($canvas_page);
+    $fr_page = $canvas_page->getTranslation('fr');
+    $fr_component = $fr_page->getComponentTree()->getComponentTreeItemByUuid($component_uuid);
+    self::assertNotNull($fr_component);
+    $fr_inputs = $fr_component->getInputs();
+    self::assertIsArray($fr_inputs);
+    self::assertArrayHasKey('title', $fr_inputs);
+    self::assertSame('fr: Click here', $fr_inputs['title']);
+
+    $this->drupalGet('/fr/page/' . $page_id);
+    $assert->statusCodeEquals(200);
+    $assert->pageTextContains('fr: Click here');
+  }
+
+  private function setFieldTranslatable(array $translatable_properties): void {
+    $page = $this->getSession()->getPage();
+    $field_is_translatable = !empty($translatable_properties);
+    $this->drupalGet('admin/config/regional/content-language');
+    if ($field_is_translatable) {
+      $page->checkField('settings[node][article][fields][field_canvas_test]');
+      foreach (['tree', 'inputs'] as $field_property) {
+        \in_array($field_property, $translatable_properties, TRUE)
+          ? $page->checkField("settings[node][article][columns][field_canvas_test][$field_property]")
+          : $page->uncheckField("settings[node][article][columns][field_canvas_test][$field_property]");
+      }
+    }
+    else {
+      $page->uncheckField('settings[node][article][fields][field_canvas_test]');
+    }
+    $page->pressButton('Save configuration');
+    $this->assertSession()->pageTextContains('Settings successfully updated.');
   }
 
 }

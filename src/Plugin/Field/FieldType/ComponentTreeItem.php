@@ -12,11 +12,14 @@ use Drupal\canvas\Plugin\DataType\ConfigEntityVersionAdapter;
 use Drupal\canvas\Plugin\DataType\ResolvedComponentInputs;
 use Drupal\canvas\PropExpressions\StructuredData\ContentAwareDependentInterface;
 use Drupal\canvas\PropSource\PropSource;
+use Drupal\canvas\Validation\ConstraintPropertyPathTranslatorTrait;
 use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\content_translation\FieldTranslationSynchronizerInterface;
 use Drupal\Core\Block\MessagesBlockPluginInterface;
 use Drupal\Core\Block\TitleBlockPluginInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 use Drupal\Core\Field\Attribute\FieldType;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -124,6 +127,7 @@ class ComponentTreeItem extends FieldItemBase {
   public const string VIOLATION_CODE_GARBAGE_INPUT = 'garbage';
 
   use ComponentTreeItemListInstantiatorTrait;
+  use ConstraintPropertyPathTranslatorTrait;
 
   // phpcs:disable Drupal.Commenting.DataTypeNamespace.DataTypeNamespace
   /**
@@ -580,7 +584,6 @@ class ComponentTreeItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function preSave(): void {
-    $entity = $this->getRoot() === $this ? NULL : $this->getEntity();
     $violations = new ConstraintViolationList();
     $source = $this->getComponent()?->getComponentSource();
     $component_instance_uuid = $this->getUuid();
@@ -599,12 +602,16 @@ class ComponentTreeItem extends FieldItemBase {
     // field are saved. When a field is saved that somehow was not validated,
     // this will catch that.
     // @see \Drupal\canvas\Plugin\Validation\Constraint\ValidComponentTreeItemConstraintValidator
-    $input_values = $this->getInputs();
-    $component_violations = $source->validateComponentInput($input_values ?? [], $component_instance_uuid, $entity);
+    $component_violations = $this->validate();
     if ($component_violations->count() > 0) {
+      $this->translateConstraintPropertyPathsAndRoot(
+        ['inputs.' => sprintf('field_canvas_test.inputs.%s.', $this->getUuid())],
+        $component_violations,
+      );
       // @todo Remove the foreach and use ::addAll once
       // https://www.drupal.org/project/drupal/issues/3490588 has been resolved.
       foreach ($component_violations as $violation) {
+
         $violations->add($violation);
       }
     }
@@ -616,13 +623,6 @@ class ComponentTreeItem extends FieldItemBase {
           )
         )
       );
-    }
-
-    // This *internal-only* validation does not need to happen using validation
-    // constraints because it does not validate user input: it only helps ensure
-    // that the logic of this field type is correct.
-    if ($input_values === NULL && $source->requiresExplicitInput()) {
-      throw new \LogicException(\sprintf('Missing input for component instance with UUID %s', $component_instance_uuid));
     }
     $this->optimizeInputs();
     // @todo Omit defaults that are stored at the content type template level, e.g. in core.entity_view_display.node.article.default.yml
@@ -706,6 +706,29 @@ class ComponentTreeItem extends FieldItemBase {
       $inputs = $source->optimizeExplicitInput($inputs);
       $this->setInput($inputs);
     }
+  }
+
+  public function isTreeTranslationSynced(): bool {
+    return $this->isPropTranslationSynced('uuid');
+  }
+
+  public function isInputsTranslationSynced(): bool {
+    return $this->isPropTranslationSynced('inputs');
+  }
+
+  private function isPropTranslationSynced(string $prop): bool {
+    if (!\Drupal::hasService(FieldTranslationSynchronizerInterface::class)) {
+      // If the service does not exist, we are not syncing tree.
+      return FALSE;
+    }
+    $syncer = \Drupal::service(FieldTranslationSynchronizerInterface::class);
+    $sync_props = $syncer->getFieldSynchronizedProperties($this->getFieldDefinition());
+    // If we are syncing uuid then we are syncing "tree", if the default
+    // translation does not have this item it means it was removed.
+    // @todo Real solution is probably already have removed the item in.
+    //   \Drupal\Core\TypedData\Plugin\DataType\ItemList::removeItem or
+    //   somewhere before this?
+    return \in_array($prop, $sync_props, TRUE);
   }
 
 }

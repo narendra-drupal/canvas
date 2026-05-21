@@ -6,6 +6,8 @@ namespace Drupal\canvas\Hook;
 
 use Drupal\canvas\JsonSchemaInterpreter\JsonSchemaObjectRef;
 use Drupal\canvas\JsonSchemaInterpreter\JsonSchemaStringFormat;
+use Drupal\canvas\Tmgmt\ComponentTreeFieldProcessor;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\canvas\Plugin\Field\FieldTypeOverride\DateRangeItemOverride;
 use Drupal\canvas\Plugin\Field\FieldTypeOverride\DateTimeItemOverride;
 use Drupal\canvas\Plugin\Field\FieldTypeOverride\EntityReferenceItemOverride;
@@ -63,6 +65,9 @@ class ShapeMatchingHooks {
     // @see \Drupal\media\Plugin\media\Source\VideoFile
     JsonSchemaObjectRef::Video->value => VideoFile::class,
   ];
+
+  public function __construct(private readonly ModuleHandlerInterface $moduleHandler) {
+  }
 
   /**
    * Implements hook_validation_constraint_alter().
@@ -128,6 +133,14 @@ class ShapeMatchingHooks {
 
     // @todo Remove this forward port of https://www.drupal.org/project/drupal/issues/3521088 once Canvas requires Drupal >=11.3
     $info['changed']['constraints'] = $info['created']['constraints'] = $info['timestamp']['constraints'];
+
+    // Register a TMGMT field processor for component_tree fields so that each
+    // translatable prop appears as a separate string in the TMGMT review form.
+    // @see \Drupal\canvas\Tmgmt\ComponentTreeFieldProcessor
+    // @see https://www.drupal.org/project/canvas/issues/3583684
+    if (isset($info['component_tree']) && $this->moduleHandler->moduleExists('tmgmt_content')) {
+      $info['component_tree']['tmgmt_field_processor'] = ComponentTreeFieldProcessor::class;
+    }
   }
 
   /**

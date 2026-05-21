@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Drupal\canvas\Plugin\Validation\Constraint;
 
 use Drupal\canvas\InvalidComponentInputsPropSourceException;
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Entity\TranslatableInterface;
+use Drupal\Core\TypedData\TypedDataManagerInterface;
 use Drupal\canvas\MissingComponentInputsException;
 use Drupal\canvas\Plugin\Field\FieldType\ComponentTreeItem;
 use Drupal\canvas\Validation\ConstraintPropertyPathTranslatorTrait;
@@ -88,6 +91,33 @@ final class ValidComponentTreeItemConstraintValidator extends ConstraintValidato
       }
     }
 
+    //
+    //   *   A component instnace, possibly symmetrically translated, in which case only
+    //   *   the translatable input keys swould be present.
+    //   *   For a symmetrical translation of a component instance, any key-value pair
+    //   *   that is
+    //   *   - present but not translatable MUST trigger a validation error
+    //   *   - absent and not translatable MUST NOT trigger a validation error
+    $is_non_default_translation = FALSE;
+    $translatable_keys = $value->get('inputs')->getTranslatableInputKeys();
+    $non_translatable_input_keys = array_diff(\array_keys($stored_explicit_input), $translatable_keys);
+    if ($fieldable_host_entity instanceof FieldableEntityInterface && $fieldable_host_entity instanceof TranslatableInterface && $fieldable_host_entity->isTranslatable() && !$fieldable_host_entity->isDefaultTranslation()) {
+      if ($value->isTreeTranslationSynced() && !$value->isInputsTranslationSynced()) {
+        $is_non_default_translation = TRUE;
+        // We now know this is not the default translation. Ensure that
+        // $inputs does not contain any non-translatable keys.
+        // @see \Drupal\canvas\Plugin\DataType\ComponentInputs::getTranslatableInputKeys().
+        if (!empty($non_translatable_input_keys)) {
+          foreach ($non_translatable_input_keys as $non_translatable_input_key) {
+            $this->context->buildViolation(
+              'non-translatable keys are not allow in translation')
+              ->atPath(\sprintf('inputs.%s', $non_translatable_input_key))
+              ->addViolation();
+          }
+        }
+      }
+    }
+
     \assert(\is_array($stored_explicit_input));
     $component_violations = $this->translateConstraintPropertyPathsAndRoot(
       ['' => $this->context->getPropertyPath() . '.'],
@@ -100,6 +130,22 @@ final class ValidComponentTreeItemConstraintValidator extends ConstraintValidato
       $this->context->getRoot()
     );
     if ($component_violations->count() > 0) {
+      if ($is_non_default_translation) {
+        // Remove any violations for input properties not $translatable_keys, as
+        // those would be expected to be missing in a non-default translation.
+        $base_path = \sprintf('%s.inputs.%s.', $this->context->getPropertyPath(), $value->getUuid());
+        $translatable_property_paths = \array_map(
+          function (string $translatable_key) use ($base_path) {
+            return $base_path . $translatable_key;
+          },
+          $translatable_keys
+        );
+        foreach ($component_violations as $key => $component_violation) {
+          if (!\in_array($component_violation->getPropertyPath(), $translatable_property_paths, TRUE)) {
+            $component_violations->remove($key);
+          }
+        }
+      }
       // @todo Remove the foreach and use ::addAll once
       // https://www.drupal.org/project/drupal/issues/3490588 has been resolved.
       foreach ($component_violations as $violation) {
