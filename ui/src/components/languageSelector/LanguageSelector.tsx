@@ -20,8 +20,10 @@ import { setInitialPageData } from '@/features/pageData/pageDataSlice';
 import { selectPageData } from '@/features/pageData/pageDataSlice';
 import { setHtml } from '@/features/pagePreview/previewSlice';
 import { componentAndLayoutApi } from '@/services/componentAndLayout';
-import { useGetLanguagesQuery } from '@/services/languages';
-import { getCanvasSettings } from '@/utils/drupal-globals';
+import {
+  useGetLanguagesQuery,
+  useGetEntityTranslationsQuery,
+} from '@/services/languages';
 
 import './LanguageSelector.css';
 
@@ -35,8 +37,10 @@ const LanguageSelector = () => {
   const dispatch = useAppDispatch();
   const dotsRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const pageData = useAppSelector(selectPageData);
-  const canvasSettings = getCanvasSettings();
-  const availableTranslations: string[] = canvasSettings?.availableTranslations || [];
+  const { data: availableTranslations = [] } = useGetEntityTranslationsQuery(
+    { entityType: entityType!, entityId: entityId! },
+    { skip: !entityType || !entityId },
+  );
 
   // Find the default language when data is loaded.
   const defaultLanguage = languages.find((lang) => lang.isDefault);

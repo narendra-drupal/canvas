@@ -122,9 +122,6 @@ HTML;
     $dev_translation_mode = $this->moduleHandler->moduleExists('canvas_dev_translation');
     $content_translation_enabled = $this->moduleHandler->moduleExists('content_translation');
     $config_translation_enabled = $this->moduleHandler->moduleExists('config_translation');
-    // Get the list of languages for which translations exist for this entity.
-    // Hardcoding this for now, we can dynamically fetch them.
-    $available_translations = ['en','fr'];
     // ⚠️ This is highly experimental and *will* be refactored.
     $ai_extension_available = $this->moduleHandler->moduleExists('canvas_ai');
     // ⚠️ This is highly experimental and *will* be refactored.
@@ -191,7 +188,6 @@ HTML;
             'devTranslationMode' => $dev_translation_mode,
             'contentTranslationEnabled' => $content_translation_enabled,
             'configTranslationEnabled' => $config_translation_enabled,
-            'availableTranslations' => $available_translations,
             'extensionsAvailable' => count($extensions) > 0,
             'aiExtensionAvailable' => $ai_extension_available,
             'personalizationExtensionAvailable' => $personalization_extension_available,

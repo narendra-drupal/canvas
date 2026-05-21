@@ -434,6 +434,17 @@ canvas.api.languages.get:
   options:
     _format: 'json'
 
+canvas.api.entity_translations.get:
+  path: '/canvas/api/v0/entity-translations/{entity_type}/{entity_id}'
+  defaults:
+    _controller: 'Drupal\canvas\Controller\ApiLanguageController::entityTranslations'
+  requirements:
+    _canvas_authentication_required: TRUE
+    _canvas_ui_access: 'TRUE'
+  methods: ['GET']
+  options:
+    _format: 'json'
+
 canvas.api.layout.content_template_draft:
   path: '/canvas/api/v0/layout-content-template-draft/{entity_type}/{preview_entity}'
   defaults:

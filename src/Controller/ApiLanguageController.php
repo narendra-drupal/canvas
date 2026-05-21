@@ -6,6 +6,8 @@ namespace Drupal\canvas\Controller;
 
 use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 
@@ -19,6 +21,7 @@ final class ApiLanguageController {
 
   public function __construct(
     private readonly LanguageManagerInterface $languageManager,
+    private readonly EntityTypeManagerInterface $entityTypeManager,
   ) {}
 
   /**
@@ -29,6 +32,19 @@ final class ApiLanguageController {
    *   indicate when a language falls back to the default translation.
    *   @see https://www.drupal.org/project/canvas/issues/3590572
    */
+  public function entityTranslations(string $entity_type, string $entity_id): CacheableJsonResponse {
+    $entity = $this->entityTypeManager->getStorage($entity_type)->load($entity_id);
+    $translations = [];
+    if ($entity instanceof TranslatableInterface) {
+      $translations = array_keys($entity->getTranslationLanguages());
+    }
+    $cacheability = new CacheableMetadata();
+    $cacheability->addCacheableDependency($entity);
+    $response = new CacheableJsonResponse(['data' => $translations]);
+    $response->addCacheableDependency($cacheability);
+    return $response;
+  }
+
   public function list(): CacheableJsonResponse {
     // STATE_CONFIGURABLE excludes locked system placeholders (und/zxx) and
     // returns only languages visible at /admin/config/regional/language —
