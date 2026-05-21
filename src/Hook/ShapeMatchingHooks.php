@@ -138,7 +138,7 @@ class ShapeMatchingHooks {
     // translatable prop appears as a separate string in the TMGMT review form.
     // @see \Drupal\canvas\Tmgmt\ComponentTreeFieldProcessor
     // @see https://www.drupal.org/project/canvas/issues/3583684
-    if (isset($info['component_tree']) && $this->moduleHandler->moduleExists('tmgmt_content')) {
+    if (isset($info['component_tree']) && \Drupal::moduleHandler()->moduleExists('tmgmt_content')) {
       $info['component_tree']['tmgmt_field_processor'] = ComponentTreeFieldProcessor::class;
     }
   }
