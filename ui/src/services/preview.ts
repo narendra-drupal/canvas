@@ -15,8 +15,10 @@ import { handleAutoSavesHashUpdate } from '@/utils/autoSaves';
 import type { RootState } from '@/app/store';
 import type {
   ComponentModel,
+  ComponentModels,
   EvaluatedComponentModel,
   PropSource,
+  RegionNode,
   ResolvedValues,
 } from '@/features/layout/layoutModelSlice';
 import type { EditorFrameContext } from '@/features/ui/uiSlice';
@@ -26,8 +28,8 @@ import type { InputUIData } from '@/types/Form';
 
 export type UpdateComponentResultType = {
   html: string;
-  layout: any;
-  model: any;
+  layout: RegionNode[];
+  model: ComponentModels;
   autoSaves: AutoSavesHash;
   errors?: Array<ConflictError>;
 };
@@ -48,8 +50,8 @@ export const previewApi = createApi({
       {
         entityType: string;
         entityId: string;
-        layout: any;
-        model: any;
+        layout: RegionNode[];
+        model: ComponentModels;
         entity_form_fields: any;
       }
     >({
@@ -85,6 +87,31 @@ export const previewApi = createApi({
           }, 5000);
         } finally {
           popCanvasLayoutRequest();
+        }
+      },
+    }),
+    getLanguagePreview: builder.query<
+      { html: string; layout: RegionNode[]; model: ComponentModels },
+      {
+        entityType: string;
+        entityId: string;
+        language: string;
+      }
+    >({
+      query: ({ entityType, entityId, language }) => ({
+        url: `${language}/canvas/api/v0/layout/${entityType}/${entityId}`,
+        method: 'GET',
+      }),
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const { html, layout, model } = data;
+          // Update our preview slice with the language-specific HTML.
+          dispatch(setHtml(html));
+          // Also update the layout model so everything stays in sync.
+          dispatch(setLayoutModel({ layout, model, updatePreview: false }));
+        } catch {
+          // Errors are surfaced via the query's isError/error state.
         }
       },
     }),
@@ -139,8 +166,11 @@ export const previewApi = createApi({
   }),
 });
 
-export const { usePostPreviewMutation, useUpdateComponentMutation } =
-  previewApi;
+export const {
+  usePostPreviewMutation,
+  useGetLanguagePreviewQuery,
+  useUpdateComponentMutation,
+} = previewApi;
 
 let lastBody = {};
 /**
@@ -253,8 +283,8 @@ const createUpdateComponentSelector = createSelector(
 
 type PostPreviewResult = { html: string; autoSaves: AutoSavesHash };
 type PostPreviewArg = {
-  layout: any;
-  model: any;
+  layout: RegionNode[];
+  model: ComponentModels;
   entity_form_fields: any;
   entityId: string;
   entityType: string;

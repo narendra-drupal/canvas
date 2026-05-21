@@ -31,6 +31,9 @@ export interface DrupalSettings {
     canvasModulePath: string;
     selectedComponent: string;
     devMode: boolean;
+    devTranslationMode: boolean;
+    contentTranslationEnabled: boolean;
+    configTranslationEnabled: boolean;
     dialogCss: string[];
     extensionsAvailable: boolean;
     // ⚠️ This is highly experimental and *will* be refactored.

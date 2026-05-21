@@ -120,6 +120,8 @@ HTML;
     $canvas_module_path = $this->moduleHandler->getModule('canvas')->getPath();
     $dev_mode = $this->moduleHandler->moduleExists('canvas_dev_mode');
     $dev_translation_mode = $this->moduleHandler->moduleExists('canvas_dev_translation');
+    $content_translation_enabled = $this->moduleHandler->moduleExists('content_translation');
+    $config_translation_enabled = $this->moduleHandler->moduleExists('config_translation');
     // ⚠️ This is highly experimental and *will* be refactored.
     $ai_extension_available = $this->moduleHandler->moduleExists('canvas_ai');
     // ⚠️ This is highly experimental and *will* be refactored.
@@ -184,6 +186,8 @@ HTML;
             'entityTypeLabels' => $entity_type_labels,
             'devMode' => $dev_mode,
             'devTranslationMode' => $dev_translation_mode,
+            'contentTranslationEnabled' => $content_translation_enabled,
+            'configTranslationEnabled' => $config_translation_enabled,
             'extensionsAvailable' => count($extensions) > 0,
             'aiExtensionAvailable' => $ai_extension_available,
             'personalizationExtensionAvailable' => $personalization_extension_available,

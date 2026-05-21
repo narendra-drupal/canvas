@@ -423,6 +423,17 @@ canvas.api.form.content_entity:
     # Used by Drupal's AJAX system.
     - POST
 
+canvas.api.languages.get:
+  path: '/canvas/api/v0/languages'
+  defaults:
+    _controller: 'Drupal\canvas\Controller\ApiLanguageController::list'
+  requirements:
+    _canvas_authentication_required: TRUE
+    _canvas_ui_access: 'TRUE'
+  methods: ['GET']
+  options:
+    _format: 'json'
+
 canvas.api.layout.content_template_draft:
   path: '/canvas/api/v0/layout-content-template-draft/{entity_type}/{preview_entity}'
   defaults:
