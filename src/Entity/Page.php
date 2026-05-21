@@ -169,29 +169,24 @@ final class Page extends EditorialContentEntityBase implements EntityOwnerInterf
       ->setDescription(t('The time the page was last edited.'))
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE);
-    $image_media_types = self::getImageMediaTypes();
-    $image_field = BaseFieldDefinition::create('entity_reference')
+    $fields['image'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Image'))
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE)
       ->setSetting('target_type', 'media')
       ->setSetting('handler', 'default')
       ->setSetting('handler_settings', [
-        'target_bundles' => $image_media_types,
-      ]);
-    if (!empty($image_media_types)) {
-      $image_field
-        ->setDisplayOptions('form', [
-          'type' => 'media_library_widget',
-          'settings' => [
-            // Leave empty so that the allowed media types are delegated to the
-            // `handler_settings.target_bundles` setting.
-            'media_types' => [],
-          ],
-        ])
-        ->setDisplayConfigurable('form', TRUE);
-    }
-    $fields['image'] = $image_field;
+        'target_bundles' => self::getImageMediaTypes(),
+      ])
+      ->setDisplayOptions('form', [
+        'type' => 'media_library_widget',
+        'settings' => [
+          // Leave empty so that the allowed media types are delegated to the
+          // `handler_settings.target_bundles` setting.
+          'media_types' => [],
+        ],
+      ])
+      ->setDisplayConfigurable('form', TRUE);
     return $fields;
   }
 
