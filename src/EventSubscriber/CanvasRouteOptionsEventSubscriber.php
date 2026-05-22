@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Drupal\canvas\EventSubscriber;
 
 use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Routing\RouteBuildEvent;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Routing\RoutingEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Routing\Route;
@@ -22,7 +24,27 @@ final class CanvasRouteOptionsEventSubscriber implements EventSubscriberInterfac
 
   public function __construct(
     private readonly RouteMatchInterface $routeMatch,
+    private readonly LanguageManagerInterface $languageManager,
   ) {}
+
+  // @todo 🔥🔥🐛🐛 The Canvas editor does not support rendering in non-default
+  //   languages. When accessed with a language prefix (e.g., /es/canvas/...),
+  //   it breaks. Redirect to the unprefixed path to force the default language.
+  public function redirectCanvasToDefaultLanguage(RequestEvent $event): void {
+    $request = $event->getRequest();
+    $path = $request->getPathInfo();
+    if (!str_starts_with($path, '/canvas') && !str_contains($path, '/canvas')) {
+      return;
+    }
+    $default_langcode = $this->languageManager->getDefaultLanguage()->getId();
+    $current_langcode = $this->languageManager->getCurrentLanguage()->getId();
+    if ($current_langcode !== $default_langcode) {
+      // Strip the language prefix and redirect.
+      $base_path = $request->getBasePath();
+      $canvas_path = preg_replace('#^/' . preg_quote($current_langcode, '#') . '/#', '/', $path);
+      $event->setResponse(new RedirectResponse($base_path . $canvas_path, 302));
+    }
+  }
 
   public function transformWrapperFormatRouteOption(RequestEvent $event): void {
     if (!str_starts_with($this->routeMatch->getRouteName() ?? '', 'canvas.api.')) {
@@ -78,6 +100,7 @@ final class CanvasRouteOptionsEventSubscriber implements EventSubscriberInterfac
    * {@inheritdoc}
    */
   public static function getSubscribedEvents(): array {
+    $events[KernelEvents::REQUEST][] = ['redirectCanvasToDefaultLanguage', 100];
     $events[KernelEvents::REQUEST][] = ['transformWrapperFormatRouteOption'];
     $events[RoutingEvents::ALTER][] = ['addCsrfToken'];
     $events[RoutingEvents::ALTER][] = ['preventRouteNormalization'];
