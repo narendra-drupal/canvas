@@ -52,7 +52,7 @@ final class TranslationDashboardController extends ControllerBase {
       $rows = [];
       foreach ($target_languages as $language) {
         $langcode = $language->getId();
-        $has_translation = $this->entityHasTranslation($entity, $entity_type, $langcode, $is_config_entity);
+        $status = $this->getTranslationStatus($entity, $entity_type, $langcode, $is_config_entity);
 
         $translate_url = Url::fromRoute('canvas.translate_entity', [
           'entity_type' => $entity_type,
@@ -60,10 +60,17 @@ final class TranslationDashboardController extends ControllerBase {
           'target_language' => $langcode,
         ]);
 
+        $status_label = match ($status) {
+          'outdated' => $this->t('Outdated'),
+          'translated' => $this->t('Translated'),
+          default => $this->t('Not translated'),
+        };
+        $action_label = $status === 'none' ? $this->t('Translate') : $this->t('Edit');
+
         $rows[] = [
           $language->getName(),
-          $has_translation ? $this->t('Translated') : $this->t('Not translated'),
-          ['data' => Link::fromTextAndUrl($has_translation ? $this->t('Edit') : $this->t('Translate'), $translate_url)->toRenderable()],
+          $status_label,
+          ['data' => Link::fromTextAndUrl($action_label, $translate_url)->toRenderable()],
         ];
       }
 
@@ -90,18 +97,31 @@ final class TranslationDashboardController extends ControllerBase {
     return $build;
   }
 
-  private function entityHasTranslation(object $entity, string $entity_type, string $langcode, bool $is_config_entity): bool {
+  /**
+   * Returns 'translated', 'outdated', or 'none'.
+   *
+   * @todo content_translation_outdated is overly broad — fires on ANY new
+   *   revision, even non-translatable changes. May show false "Outdated".
+   */
+  private function getTranslationStatus(object $entity, string $entity_type, string $langcode, bool $is_config_entity): string {
     if (!$is_config_entity && $entity instanceof TranslatableInterface) {
-      return $entity->hasTranslation($langcode);
+      if (!$entity->hasTranslation($langcode)) {
+        return 'none';
+      }
+      $translation = $entity->getTranslation($langcode);
+      if ($translation->get('content_translation_outdated')->value) {
+        return 'outdated';
+      }
+      return 'translated';
     }
     if ($is_config_entity) {
       $language_manager = \Drupal::service(LanguageManagerInterface::class);
       if ($language_manager instanceof ConfigurableLanguageManagerInterface) {
         $override = $language_manager->getLanguageConfigOverride($langcode, $entity->getConfigDependencyName());
-        return !$override->isNew();
+        return $override->isNew() ? 'none' : 'translated';
       }
     }
-    return FALSE;
+    return 'none';
   }
 
 }
