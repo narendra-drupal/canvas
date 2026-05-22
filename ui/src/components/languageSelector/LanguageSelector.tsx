@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { skipToken } from '@reduxjs/toolkit/query';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   CheckIcon,
@@ -11,10 +12,7 @@ import {
 import { Button, Flex, Popover, Separator, Text } from '@radix-ui/themes';
 
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import {
-  selectIsPublished,
-  setConfiguration,
-} from '@/features/configuration/configurationSlice';
+import { setConfiguration } from '@/features/configuration/configurationSlice';
 import {
   initialState as layoutInitialState,
   setInitialLayoutModel,
@@ -22,7 +20,10 @@ import {
 import { setInitialPageData } from '@/features/pageData/pageDataSlice';
 import { selectPageData } from '@/features/pageData/pageDataSlice';
 import { setHtml } from '@/features/pagePreview/previewSlice';
-import { componentAndLayoutApi } from '@/services/componentAndLayout';
+import {
+  componentAndLayoutApi,
+  useGetPageLayoutQuery,
+} from '@/services/componentAndLayout';
 import {
   useGetLanguagesQuery,
   useGetEntityTranslationsQuery,
@@ -40,7 +41,10 @@ const LanguageSelector = () => {
   const dispatch = useAppDispatch();
   const dotsRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const pageData = useAppSelector(selectPageData);
-  const isPublished = useAppSelector(selectIsPublished);
+  const { data: fetchedLayout } = useGetPageLayoutQuery(
+    entityType && entityId ? { entityType, entityId } : skipToken,
+  );
+  const isPublished = fetchedLayout?.isPublished ?? false;
   const { data: availableTranslations = [] } = useGetEntityTranslationsQuery(
     { entityType: entityType!, entityId: entityId! },
     { skip: !entityType || !entityId },
