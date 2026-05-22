@@ -58,7 +58,13 @@ final class TranslationJobController extends ControllerBase {
     // Case A: Check for existing active/review job item.
     $existing_item = $this->findActiveJobItem($plugin, $item_type, $item_id, $target_language);
     if ($existing_item) {
-      return $this->redirectToJobItem($existing_item, $entity_type, $entity_id);
+      // If the item is stale (no user progress saved), discard and create fresh.
+      if ($this->isStaleWithNoProgress($existing_item)) {
+        $existing_item->delete();
+      }
+      else {
+        return $this->redirectToJobItem($existing_item, $entity_type, $entity_id);
+      }
     }
 
     // Check if translation already exists.
@@ -222,6 +228,19 @@ final class TranslationJobController extends ControllerBase {
       }
     }
     return FALSE;
+  }
+
+  private function isStaleWithNoProgress(JobItemInterface $item): bool {
+    /** @var \Drupal\tmgmt\Data $data_service */
+    $data_service = \Drupal::service('tmgmt.data');
+    $data = $item->getData();
+    $translatable_items = $data_service->filterTranslatable($data);
+    foreach ($translatable_items as $flat_item) {
+      if (!empty($flat_item['#translation']['#text'])) {
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
   private function findOrCreateJob(string $source_language, string $target_language): Job {
