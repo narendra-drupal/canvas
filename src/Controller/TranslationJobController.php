@@ -86,7 +86,7 @@ final class TranslationJobController extends ControllerBase {
     // Case C: No translation exists — create fresh job item.
     $job = $this->findOrCreateJob($source_language, $target_language);
     $job_item = $job->addItem($plugin, $item_type, $item_id);
-    $job_item->setState(JobItemInterface::STATE_ACTIVE);
+    $job_item->setState(JobItemInterface::STATE_REVIEW);
     $job_item->save();
 
     return $this->redirectToJobItem($job_item, $entity_type);
@@ -122,7 +122,7 @@ final class TranslationJobController extends ControllerBase {
 
     $job = $this->findOrCreateJob($source_language, $target_language);
     $job_item = $job->addItem($plugin, $item_type, $item_id);
-    $job_item->setState(JobItemInterface::STATE_ACTIVE);
+    $job_item->setState(JobItemInterface::STATE_REVIEW);
     $job_item->save();
 
     return $this->redirectToJobItem($job_item, $entity_type);
