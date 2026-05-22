@@ -8,14 +8,12 @@ use Drupal\Core\Config\Entity\ConfigEntityTypeInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Url;
 use Drupal\language\ConfigurableLanguageManagerInterface;
 use Drupal\tmgmt\Entity\Job;
 use Drupal\tmgmt\JobItemInterface;
-use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Drupal\Core\Messenger\MessengerInterface;
 
 /**
  * Controller that auto-creates TMGMT jobs and redirects to the review form.
@@ -58,7 +56,7 @@ final class TranslationJobController extends ControllerBase {
     // Case A: Check for existing active/review job item.
     $existing_item = $this->findActiveJobItem($plugin, $item_type, $item_id, $target_language);
     if ($existing_item) {
-      // If the item is stale (no user progress saved), discard and create fresh.
+      // Discard stale items (no user progress) and create fresh.
       if ($this->isStaleWithNoProgress($existing_item)) {
         $existing_item->delete();
       }
@@ -295,7 +293,6 @@ final class TranslationJobController extends ControllerBase {
     return $job;
   }
 
-
   private function redirectToJobItem(JobItemInterface $job_item, string $entity_type = 'canvas_page', string $entity_id = ''): RedirectResponse {
     $request = \Drupal::request();
     $origin = $request->query->get('origin');
@@ -304,13 +301,12 @@ final class TranslationJobController extends ControllerBase {
       $destination = "/canvas/editor/{$entity_type}/{$entity_id}";
     }
     else {
-      $route_map = [
-        'canvas_page' => 'canvas.translation_dashboard',
-        'content_template' => 'canvas.translation_dashboard.content_template',
-        'page_region' => 'canvas.translation_dashboard.page_region',
-      ];
-      $route = $route_map[$entity_type] ?? 'canvas.translation_dashboard';
-      $destination = Url::fromRoute($route)->toString();
+      $destination = Url::fromRoute('canvas.translation_dashboard', [], [
+        'query' => [
+          'entity_type' => $entity_type,
+          'langcode' => $job_item->getJob()->getTargetLangcode(),
+        ],
+      ])->toString();
     }
 
     $url = $job_item->toUrl()->setOption('query', ['destination' => $destination])->setAbsolute()->toString();

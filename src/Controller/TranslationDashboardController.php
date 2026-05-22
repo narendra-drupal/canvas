@@ -4,93 +4,144 @@ declare(strict_types=1);
 
 namespace Drupal\canvas\Controller;
 
+use Drupal\canvas\Form\TranslationDashboardFilterForm;
 use Drupal\Core\Config\Entity\ConfigEntityTypeInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\TranslatableInterface;
-use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\language\ConfigurableLanguageManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Translation dashboard showing Canvas entities and their translation status.
+ * Translation dashboard — single-page view of all translatable entity types.
  */
 final class TranslationDashboardController extends ControllerBase {
 
-  public function overview(string $entity_type = 'canvas_page'): array {
-    $languages = $this->languageManager()->getLanguages(LanguageInterface::STATE_CONFIGURABLE);
-    $default_language = $this->languageManager()->getDefaultLanguage();
+  public function overview(Request $request): array {
+    $form = $this->formBuilder()->getForm(TranslationDashboardFilterForm::class);
 
-    $target_languages = [];
-    foreach ($languages as $language) {
-      if ($language->getId() !== $default_language->getId()) {
-        $target_languages[] = $language;
-      }
+    // Resolve effective filter values (defaults match form defaults).
+    $entity_type = $request->query->get('entity_type', 'node');
+    $bundle = $request->query->get('bundle', '');
+    $langcode = $request->query->get('langcode', '');
+    $title_filter = $request->query->get('title', '');
+    $status_filter = $request->query->get('status', '');
+
+    // If no langcode in URL, use the same default the form uses.
+    if (!$langcode) {
+      /** @var \Drupal\canvas\Form\TranslationDashboardFilterForm $form_obj */
+      $form_obj = \Drupal::classResolver(TranslationDashboardFilterForm::class);
+      $language_options = $form_obj->getLanguageOptions();
+      $langcode = array_key_first($language_options) ?? '';
     }
 
-    $entity_type_definition = $this->entityTypeManager()->getDefinition($entity_type);
+    $build = [
+      'filters' => $form,
+    ];
+
+    if (!$langcode) {
+      $build['message'] = [
+        '#markup' => '<p>' . $this->t('No target languages are configured.') . '</p>',
+      ];
+      return $build;
+    }
+
+    $entity_type_definition = $this->entityTypeManager()->getDefinition($entity_type, FALSE);
+    if (!$entity_type_definition) {
+      $build['message'] = [
+        '#markup' => '<p>' . $this->t('Unknown entity type.') . '</p>',
+      ];
+      return $build;
+    }
+
     $is_config_entity = $entity_type_definition instanceof ConfigEntityTypeInterface;
     $storage = $this->entityTypeManager()->getStorage($entity_type);
 
+    // Build destination URL to return to dashboard with current filters.
+    $destination_query = array_filter([
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'langcode' => $langcode,
+      'title' => $title_filter,
+      'status' => $status_filter,
+    ]);
+    $destination = Url::fromRoute('canvas.translation_dashboard', [], ['query' => $destination_query])->toString();
+
     if ($is_config_entity) {
       $entities = $storage->loadMultiple();
+      // Apply title filter manually for config entities.
+      if ($title_filter) {
+        $entities = array_filter($entities, function ($entity) use ($title_filter) {
+          return str_contains(strtolower((string) ($entity->label() ?? $entity->id())), strtolower($title_filter));
+        });
+      }
     }
     else {
-      $ids = $storage->getQuery()
+      $query = $storage->getQuery()
         ->accessCheck(TRUE)
         ->condition('status', 1)
         ->sort('created', 'DESC')
-        ->range(0, 100)
-        ->execute();
+        ->range(0, 100);
+
+      if ($bundle) {
+        $bundle_key = $entity_type_definition->getKey('bundle');
+        if ($bundle_key) {
+          $query->condition($bundle_key, $bundle);
+        }
+      }
+
+      if ($title_filter) {
+        $label_key = $entity_type_definition->getKey('label');
+        if ($label_key) {
+          $query->condition($label_key, '%' . $title_filter . '%', 'LIKE');
+        }
+      }
+
+      $ids = $query->execute();
       $entities = $storage->loadMultiple($ids);
     }
 
-    $build = [];
+    $rows = [];
     foreach ($entities as $entity) {
       $entity_id = $entity->id();
-      $rows = [];
-      foreach ($target_languages as $language) {
-        $langcode = $language->getId();
-        $status = $this->getTranslationStatus($entity, $entity_type, $langcode, $is_config_entity);
+      $status = $this->getTranslationStatus($entity, $entity_type, $langcode, $is_config_entity);
 
-        $translate_url = Url::fromRoute('canvas.translate_entity', [
-          'entity_type' => $entity_type,
-          'entity_id' => $entity_id,
-          'target_language' => $langcode,
-        ]);
-
-        $status_label = match ($status) {
-          'outdated' => $this->t('Outdated'),
-          'translated' => $this->t('Translated'),
-          default => $this->t('Not translated'),
-        };
-        $action_label = $status === 'none' ? $this->t('Translate') : $this->t('Edit');
-
-        $rows[] = [
-          $language->getName(),
-          $status_label,
-          ['data' => Link::fromTextAndUrl($action_label, $translate_url)->toRenderable()],
-        ];
+      if ($status_filter && $status !== $status_filter) {
+        continue;
       }
 
-      $build[$entity_id] = [
-        'heading' => [
-          '#type' => 'html_tag',
-          '#tag' => 'h3',
-          '#value' => $entity->label() ?: $entity_id,
-        ],
-        'table' => [
-          '#type' => 'table',
-          '#header' => [$this->t('Language'), $this->t('Status'), $this->t('Action')],
-          '#rows' => $rows,
-        ],
+      $translate_url = Url::fromRoute('canvas.translate_entity', [
+        'entity_type' => $entity_type,
+        'entity_id' => $entity_id,
+        'target_language' => $langcode,
+      ], ['query' => ['destination' => $destination]]);
+
+      $status_label = match ($status) {
+        'outdated' => $this->t('Outdated'),
+        'translated' => $this->t('Translated'),
+        default => $this->t('Not translated'),
+      };
+      $action_label = $status === 'none' ? $this->t('Translate') : $this->t('Edit');
+
+      $rows[] = [
+        $entity->label() ?: $entity_id,
+        $status_label,
+        ['data' => Link::fromTextAndUrl($action_label, $translate_url)->toRenderable()],
       ];
     }
 
-    if (empty($build)) {
+    if (empty($rows)) {
       $build['empty'] = [
-        '#markup' => '<p>' . $this->t('No @type entities found.', ['@type' => $entity_type_definition->getLabel()]) . '</p>',
+        '#markup' => '<p>' . $this->t('No entities found matching the selected filters.') . '</p>',
+      ];
+    }
+    else {
+      $build['table'] = [
+        '#type' => 'table',
+        '#header' => [$this->t('Title'), $this->t('Status'), $this->t('Action')],
+        '#rows' => $rows,
       ];
     }
 

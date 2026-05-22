@@ -9,12 +9,15 @@ Abstract away TMGMT's internal concepts (jobs, job items, states) so Canvas cont
 ## Entry Points (How Users Start Translating)
 
 ### 1. Translation Dashboard (Drupal admin)
-- **URL:** `/admin/canvas/translations/canvas_page` (also `/content_template`, `/page_region`)
+- **URL:** `/admin/canvas/translations`
 - **Controller:** `src/Controller/TranslationDashboardController.php`
-- Shows per-entity sub-tables with Language | Status | Action columns
+- **Filter form:** `src/Form/TranslationDashboardFilterForm.php`
+- Single page with filter dropdowns: Entity Type (required, default: Node), Bundle (conditional — shown when entity type has multiple translatable bundles), Language (required, default: first non-default language alphabetically), Title search, Status
+- Shows flat table with Title | Status | Action columns (one row per entity for the selected language)
 - Status: "Not translated" / "Translated" / "Outdated"
-- Only shows published content entities
-- Tabs via local tasks in `canvas.links.task.yml`
+- Only shows published content entities; all config entities shown
+- Supported entity types: Node, Taxonomy Term, Media, Canvas Page (content); Canvas Content Template, Canvas Global Regions (config)
+- Only shows entity types that are actually translation-enabled (`content_translation.manager`)
 
 ### 2. Canvas Editor Language Selector (frontend)
 - **File:** `ui/src/components/languageSelector/LanguageSelector.tsx`
@@ -29,6 +32,8 @@ Abstract away TMGMT's internal concepts (jobs, job items, states) so Canvas cont
 ### TranslationJobController (`src/Controller/TranslationJobController.php`)
 
 Single entry point: `/admin/canvas/translate/{entity_type}/{entity_id}/{target_language}`
+
+After save, redirects to `/admin/canvas/translations?entity_type={type}&langcode={lang}`.
 
 Smart routing based on state:
 
@@ -118,9 +123,9 @@ After saving the TMGMT form, users return to where they started:
 |---|---|
 | `src/Controller/ApiAutoSaveController.php` | Translation preservation on publish (copies translations to new revisions) |
 | `ui/src/services/languages.ts` | RTK Query hooks for languages and translation status |
-| `canvas.routing.yml` | Translation routes (5 routes: 3 dashboard tabs + translate + update) |
+| `canvas.routing.yml` | Translation routes (3 routes: dashboard + translate + update) |
 | `canvas.links.menu.yml` | Menu link under Admin > Content |
-| `canvas.links.task.yml` | Local task tabs for dashboard entity types |
+| `src/Form/TranslationDashboardFilterForm.php` | Filter form embedded in dashboard |
 
 ## Required Modules
 
