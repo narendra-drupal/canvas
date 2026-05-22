@@ -72,22 +72,27 @@ final class TranslationJobController extends ControllerBase {
 
     // Case B: Translation exists, no active job item.
     if ($translation_exists) {
-      // Look for the most recent accepted job item so user can see the
-      // existing translation in TMGMT's read-only review form.
-      $accepted_item = $this->findAcceptedJobItem($plugin, $item_type, $item_id, $target_language);
-      if ($accepted_item) {
-        $update_url = Url::fromRoute('canvas.update_translation', [
-          'entity_type' => $entity_type,
-          'entity_id' => $entity_id,
-          'target_language' => $target_language,
-        ])->toString();
-        \Drupal::messenger()->addMessage($this->t('This translation has already been accepted. <a href="@url">Click here to update it</a>.', [
-          '@url' => $update_url,
-        ]));
-        return $this->redirectToJobItem($accepted_item, $entity_type, $entity_id);
+      $is_outdated = $this->translationIsOutdated($entity, $target_language, $is_config_entity);
+
+      // If outdated, skip read-only view — go straight to editable form.
+      // hook_entity_prepare_form will pre-populate with existing translation.
+      // If user abandons, Fix 3 discards the stale item next time.
+      if (!$is_outdated) {
+        $accepted_item = $this->findAcceptedJobItem($plugin, $item_type, $item_id, $target_language);
+        if ($accepted_item) {
+          $update_url = Url::fromRoute('canvas.update_translation', [
+            'entity_type' => $entity_type,
+            'entity_id' => $entity_id,
+            'target_language' => $target_language,
+          ])->toString();
+          \Drupal::messenger()->addMessage($this->t('This translation has already been accepted. <a href="@url">Click here to update it</a>.', [
+            '@url' => $update_url,
+          ]));
+          return $this->redirectToJobItem($accepted_item, $entity_type, $entity_id);
+        }
+        // No accepted job item found (translation created outside TMGMT).
+        return $this->translationExistsPage($entity, $entity_type, $entity_id, $target_language);
       }
-      // No accepted job item found (translation created outside TMGMT).
-      return $this->translationExistsPage($entity, $entity_type, $entity_id, $target_language);
     }
 
     // Case C: No translation exists — create fresh job item.
@@ -228,6 +233,17 @@ final class TranslationJobController extends ControllerBase {
       }
     }
     return FALSE;
+  }
+
+  private function translationIsOutdated(object $entity, string $target_language, bool $is_config_entity): bool {
+    if ($is_config_entity) {
+      return FALSE;
+    }
+    if (!$entity instanceof TranslatableInterface || !$entity->hasTranslation($target_language)) {
+      return FALSE;
+    }
+    $translation = $entity->getTranslation($target_language);
+    return (bool) $translation->get('content_translation_outdated')->value;
   }
 
   private function isStaleWithNoProgress(JobItemInterface $item): bool {
