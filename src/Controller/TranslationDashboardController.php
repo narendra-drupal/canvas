@@ -22,12 +22,9 @@ final class TranslationDashboardController extends ControllerBase {
     $languages = $this->languageManager()->getLanguages(LanguageInterface::STATE_CONFIGURABLE);
     $default_language = $this->languageManager()->getDefaultLanguage();
 
-    // Build header: Entity label + one column per non-default language.
-    $header = [$this->t('Name')];
     $target_languages = [];
     foreach ($languages as $language) {
       if ($language->getId() !== $default_language->getId()) {
-        $header[] = $language->getName();
         $target_languages[] = $language;
       }
     }
@@ -36,7 +33,6 @@ final class TranslationDashboardController extends ControllerBase {
     $is_config_entity = $entity_type_definition instanceof ConfigEntityTypeInterface;
     $storage = $this->entityTypeManager()->getStorage($entity_type);
 
-    // Load entities.
     if ($is_config_entity) {
       $entities = $storage->loadMultiple();
     }
@@ -50,37 +46,48 @@ final class TranslationDashboardController extends ControllerBase {
       $entities = $storage->loadMultiple($ids);
     }
 
-    $rows = [];
+    $build = [];
     foreach ($entities as $entity) {
-      $row = [$entity->label() ?: $entity->id()];
-
+      $entity_id = $entity->id();
+      $rows = [];
       foreach ($target_languages as $language) {
         $langcode = $language->getId();
         $has_translation = $this->entityHasTranslation($entity, $entity_type, $langcode, $is_config_entity);
 
         $translate_url = Url::fromRoute('canvas.translate_entity', [
           'entity_type' => $entity_type,
-          'entity_id' => $entity->id(),
+          'entity_id' => $entity_id,
           'target_language' => $langcode,
         ]);
 
-        if ($has_translation) {
-          $row[] = ['data' => Link::fromTextAndUrl('✓ Edit', $translate_url)->toRenderable()];
-        }
-        else {
-          $row[] = ['data' => Link::fromTextAndUrl('Translate', $translate_url)->toRenderable()];
-        }
+        $rows[] = [
+          $language->getName(),
+          $has_translation ? $this->t('Translated') : $this->t('Not translated'),
+          ['data' => Link::fromTextAndUrl($has_translation ? $this->t('Edit') : $this->t('Translate'), $translate_url)->toRenderable()],
+        ];
       }
 
-      $rows[] = $row;
+      $build[$entity_id] = [
+        'heading' => [
+          '#type' => 'html_tag',
+          '#tag' => 'h3',
+          '#value' => $entity->label() ?: $entity_id,
+        ],
+        'table' => [
+          '#type' => 'table',
+          '#header' => [$this->t('Language'), $this->t('Status'), $this->t('Action')],
+          '#rows' => $rows,
+        ],
+      ];
     }
 
-    return [
-      '#type' => 'table',
-      '#header' => $header,
-      '#rows' => $rows,
-      '#empty' => $this->t('No @type entities found.', ['@type' => $entity_type_definition->getLabel()]),
-    ];
+    if (empty($build)) {
+      $build['empty'] = [
+        '#markup' => '<p>' . $this->t('No @type entities found.', ['@type' => $entity_type_definition->getLabel()]) . '</p>',
+      ];
+    }
+
+    return $build;
   }
 
   private function entityHasTranslation(object $entity, string $entity_type, string $langcode, bool $is_config_entity): bool {
