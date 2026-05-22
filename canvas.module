@@ -13,9 +13,13 @@ ini_set('assert.active', 1);
 use Drupal\canvas\Entity\Component;
 use Drupal\canvas\Plugin\Canvas\ComponentSource\GeneratedFieldExplicitInputUxComponentSourceBase;
 use Drupal\canvas\PropSource\FieldStorageDefinition;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Markup;
+use Drupal\tmgmt\Entity\JobItem;
+use Drupal\tmgmt\Form\JobItemForm;
 
 /**
  * Provides allowed values for a 'list_*' field used in a StaticPropSource.
@@ -100,5 +104,70 @@ function canvas_preprocess_html(array &$variables): void {
   $current_route = \Drupal::routeMatch()->getRouteName();
   if ($current_route === 'entity.canvas_page.canonical') {
     $variables['attributes']['class'][] = 'canvas-page';
+  }
+}
+
+/**
+ * Implements hook_entity_prepare_form().
+ *
+ * Pre-populates TMGMT job item form with existing translation data so users
+ * see their previous translations when editing. Only modifies the entity in
+ * memory — data persists to DB only when user submits the form.
+ */
+function canvas_entity_prepare_form(EntityInterface $entity, string $operation, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof JobItemForm) {
+    return;
+  }
+  if (!$entity instanceof JobItem) {
+    return;
+  }
+
+  // Only pre-populate if job item has no translated data saved yet.
+  /** @var \Drupal\tmgmt\Data $data_service */
+  $data_service = \Drupal::service('tmgmt.data');
+  $data = $entity->getData();
+  $translatable_items = $data_service->filterTranslatable($data);
+  foreach ($translatable_items as $item) {
+    if (!empty($item['#translation']['#text'])) {
+      // User already saved progress — don't overwrite.
+      return;
+    }
+  }
+
+  // Check if source entity has an existing translation for target language.
+  $target_langcode = $entity->getJob()->getTargetLangcode();
+  $plugin = $entity->get('plugin')->value;
+
+  if ($plugin === 'content') {
+    $source_entity = \Drupal::entityTypeManager()
+      ->getStorage($entity->getItemType())
+      ->load($entity->getItemId());
+    if (!$source_entity || !$source_entity instanceof \Drupal\Core\Entity\TranslatableInterface) {
+      return;
+    }
+    if (!$source_entity->hasTranslation($target_langcode)) {
+      return;
+    }
+
+    $translation = $source_entity->getTranslation($target_langcode);
+    /** @var \Drupal\tmgmt_content\Plugin\tmgmt\Source\ContentEntitySource $source_plugin */
+    $source_plugin = $entity->getSourcePlugin();
+    $translation_data = $source_plugin->extractTranslatableData($translation);
+
+    // Walk the translation data and set #translation.#text on each item.
+    $flat_translation = $data_service->filterTranslatable($translation_data);
+    foreach ($flat_translation as $key => $item) {
+      if (!empty($item['#text'])) {
+        $key_array = explode('][', $key);
+        $entity->updateData($key_array, [
+          '#translation' => [
+            '#text' => $item['#text'],
+            '#origin' => 'existing',
+          ],
+          '#status' => TMGMT_DATA_ITEM_STATE_TRANSLATED,
+        ]);
+      }
+    }
   }
 }
