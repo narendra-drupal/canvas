@@ -57,7 +57,7 @@ final class TranslationJobController extends ControllerBase {
     // Case A: Check for existing active/review job item.
     $existing_item = $this->findActiveJobItem($plugin, $item_type, $item_id, $target_language);
     if ($existing_item) {
-      return $this->redirectToJobItem($existing_item);
+      return $this->redirectToJobItem($existing_item, $entity_type);
     }
 
     // Check if translation already exists.
@@ -77,7 +77,7 @@ final class TranslationJobController extends ControllerBase {
         \Drupal::messenger()->addMessage($this->t('This translation has already been accepted. <a href="@url">Click here to update it</a>.', [
           '@url' => $update_url,
         ]));
-        return $this->redirectToJobItem($accepted_item);
+        return $this->redirectToJobItem($accepted_item, $entity_type);
       }
       // No accepted job item found (translation created outside TMGMT).
       return $this->translationExistsPage($entity, $entity_type, $entity_id, $target_language);
@@ -89,7 +89,7 @@ final class TranslationJobController extends ControllerBase {
     $job_item->setState(JobItemInterface::STATE_ACTIVE);
     $job_item->save();
 
-    return $this->redirectToJobItem($job_item);
+    return $this->redirectToJobItem($job_item, $entity_type);
   }
 
   public function updateTranslation(string $entity_type, string $entity_id, string $target_language): RedirectResponse {
@@ -125,7 +125,7 @@ final class TranslationJobController extends ControllerBase {
     $job_item->setState(JobItemInterface::STATE_ACTIVE);
     $job_item->save();
 
-    return $this->redirectToJobItem($job_item);
+    return $this->redirectToJobItem($job_item, $entity_type);
   }
 
   private function translationExistsPage(object $entity, string $entity_type, string $entity_id, string $target_language): array {
@@ -260,8 +260,15 @@ final class TranslationJobController extends ControllerBase {
   }
 
 
-  private function redirectToJobItem(JobItemInterface $job_item): RedirectResponse {
-    $url = $job_item->toUrl()->setAbsolute()->toString();
+  private function redirectToJobItem(JobItemInterface $job_item, string $entity_type = 'canvas_page'): RedirectResponse {
+    $route_map = [
+      'canvas_page' => 'canvas.translation_dashboard',
+      'content_template' => 'canvas.translation_dashboard.content_template',
+      'page_region' => 'canvas.translation_dashboard.page_region',
+    ];
+    $route = $route_map[$entity_type] ?? 'canvas.translation_dashboard';
+    $destination = Url::fromRoute($route)->toString();
+    $url = $job_item->toUrl()->setOption('query', ['destination' => $destination])->setAbsolute()->toString();
     return new RedirectResponse($url);
   }
 
