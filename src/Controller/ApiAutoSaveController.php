@@ -24,6 +24,7 @@ use Drupal\Core\Entity\EntityConstraintViolationListInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
@@ -363,6 +364,21 @@ final class ApiAutoSaveController extends ApiControllerBase {
         // the first entity collides with some of the following entities. So
         // we need to validate right before saving the entity.
         self::ensureEntityIsValid($entity);
+        // @todo 🔥🔥🐛🐛 This must be fixed outside of the demo workflow: when creating
+        //   a new revision from auto-save data, existing translations from the
+        //   previous revision must be carried forward. Without this, publishing
+        //   a page drops all non-default-language translations.
+        //   @see https://drupal.org/i/3583684
+        if ($entity instanceof TranslatableInterface) {
+          $original = $this->entityTypeManager->getStorage($entity->getEntityTypeId())->loadUnchanged($entity->id());
+          if ($original instanceof TranslatableInterface) {
+            foreach ($original->getTranslationLanguages(FALSE) as $langcode => $language) {
+              if (!$entity->hasTranslation($langcode)) {
+                $entity->addTranslation($langcode, $original->getTranslation($langcode)->toArray());
+              }
+            }
+          }
+        }
         $entity->save();
       }
       foreach ($entities as $entity) {
