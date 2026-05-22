@@ -43,6 +43,7 @@ final class TranslationDashboardController extends ControllerBase {
     else {
       $ids = $storage->getQuery()
         ->accessCheck(TRUE)
+        ->condition('status', 1)
         ->sort('created', 'DESC')
         ->range(0, 100)
         ->execute();
