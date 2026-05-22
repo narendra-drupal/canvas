@@ -476,6 +476,14 @@ canvas.translate_entity:
   path: '/admin/canvas/translate/{entity_type}/{entity_id}/{target_language}'
   defaults:
     _controller: '\Drupal\canvas\Controller\TranslationJobController::translate'
+    _title: 'Translation'
+  requirements:
+    _permission: 'translate any entity'
+
+canvas.update_translation:
+  path: '/admin/canvas/translate/{entity_type}/{entity_id}/{target_language}/update'
+  defaults:
+    _controller: '\Drupal\canvas\Controller\TranslationJobController::updateTranslation'
   requirements:
     _permission: 'translate any entity'
 
