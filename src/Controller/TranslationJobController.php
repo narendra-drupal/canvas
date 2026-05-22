@@ -131,11 +131,21 @@ final class TranslationJobController extends ControllerBase {
       return $job;
     }
 
-    // Create a new job.
+    // Create a new job with the first available translator.
     $job = tmgmt_job_create($source_language, $target_language, (int) $this->currentUser()->id());
     $job->set('label', "Canvas translations ($source_language → $target_language)");
+
+    // Assign the first available translator (e.g., "local" = Drupal user).
+    $translator_ids = $this->entityTypeManager()->getStorage('tmgmt_translator')
+      ->getQuery()
+      ->accessCheck(FALSE)
+      ->execute();
+    if (empty($translator_ids)) {
+      throw new \RuntimeException('No TMGMT translator available. Create one at /admin/tmgmt/translators.');
+    }
+    $job->set('translator', reset($translator_ids));
+
     $job->save();
-    // Set to active state so job items can be reviewed.
     $job->setState(Job::STATE_ACTIVE);
     return $job;
   }
