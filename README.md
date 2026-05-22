@@ -1,24 +1,120 @@
-# Drupal Canvas
+# Canvas + TMGMT Translation Workflow Demo
 
-Drupal Canvas enables site builders without Drupal experience to easily theme and build their entire website using only their browser, without the need to write code beyond basic JSX and CSS, and content creators are able to compose content on any part of the page without relying on developers.
+## Purpose
 
-## Requirements
+Demonstrates how the TMGMT (Translation Management Tool) module integrates with Drupal Canvas to provide a streamlined translation workflow. The goal is to abstract away TMGMT's internal concepts (jobs, job items) so that content creators can translate Canvas pages and config entities without needing to understand the underlying translation management system.
 
-This module requires the core Media and Media Library modules to support images.
+## Features
 
-## Trying Drupal Canvas
+- **Translation Dashboard** (`/admin/canvas/translations/canvas_page`) — Lists all published Canvas entities with per-language translation status. Tabbed interface for Pages, Content Templates, and Page Regions.
+- **One-click translation** — Users click "Translate" or "Edit" and are taken directly to the TMGMT review form. Jobs and job items are created automatically behind the scenes.
+- **Language selector integration** — The Canvas editor's language selector includes "Edit translation" in the per-language dots menu, opening the translation form in a new tab.
+- **Smart routing** — The controller detects the current translation state and routes appropriately:
+  - No translation exists → creates job item, opens editable form
+  - Translation in progress → redirects to existing active job item
+  - Translation already accepted → shows read-only view with "Update Translation" option
+- **Context-aware redirects** — After saving a translation, users return to where they started (Canvas editor or translation dashboard).
+- **Translation preservation** — Existing translations are carried forward when publishing new revisions via Canvas auto-save.
+- **Language prefix handling** — Canvas editor URLs with language prefixes (e.g., `/es/canvas/...`) are redirected to the default language to prevent editor breakage.
 
-The easiest way to try Drupal Canvas (Canvas for short) is to install [Drupal CMS](https://www.drupal.org/project/cms), which includes the Byte site template with sample content that uses Canvas for both landing pages and structured content display. Follow the instructions there and you should be ready to test in a couple of steps.
+## Workflows
 
-## Installation
+### Translating from the Canvas Editor
 
-See the [CONTRIBUTING.md](CONTRIBUTING.md) steps to install.
+1. Open a page in Canvas editor
+2. Publish the page
+3. Click the language selector (globe icon) in the toolbar
+4. Click the dots menu (⋮) next to a non-default language
+5. Click "Edit translation" — opens TMGMT review form in new tab
+6. Fill in translations and save
+7. Redirected back to Canvas editor
 
-## Configuration
+### Translating from the Dashboard
 
-See the [CONTRIBUTING.md](CONTRIBUTING.md) steps for configuration.
+1. Navigate to Admin > Content > Canvas Translations
+2. Select the appropriate tab (Pages, Content Templates, Page Regions)
+3. Click "Translate" or "Edit" next to a language
+4. Fill in translations in the TMGMT review form and save
+5. Redirected back to the dashboard
 
-You'll need a set of components to use with Canvas. Either build your own or start from an existing component system. Some examples:
+### Updating an Existing Translation
 
-- [Mercury Theme](https://www.drupal.org/project/mercury) is an open source Twig / SDC based component system that was built for Drupal CMS.
-- [Nebula](https://github.com/acquia/nebula) is an open source template repository for [@drupal-canvas/create](https://www.npmjs.com/package/@drupal-canvas/create) to scaffold a new codebase for working with JavaScript Code Components.
+1. Click "Edit translation" for an entity that already has a translation
+2. View the accepted (read-only) translation form
+3. Click the "Click here to update it" link in the status message
+4. Edit translations in the new active form and save
+
+## Limitations
+
+- **Demo-quality code** — Not intended for production use without further refinement.
+- **Canvas editor does not render in non-default languages** — Language prefix URLs redirect to default language.
+- **Translation loss on publish** — Workaround in place to copy translations to new revisions, but needs a proper fix in core Canvas auto-save logic.
+- **Delete translation** button in language selector opens the standard Drupal translation deletion form (not a Canvas-native UX).
+- **No continuous job support for config entities** — Only `ContentEntitySource` implements `ContinuousSourceInterface`.
+- **One TMGMT translator must exist** — The system throws an error if no translator is configured.
+
+## Setup Instructions
+
+### 1. Enable Required Modules
+
+```bash
+drush en canvas canvas_sdc_test tmgmt_content tmgmt_local tmgmt_config language content_translation -y
+```
+
+Required modules:
+- `canvas` — Canvas / Experience Builder
+- `canvas_sdc_test` — Test components for Canvas
+- `tmgmt_content` — TMGMT content entity source
+- `tmgmt_local` — TMGMT local translator (allows Drupal users to translate)
+- `tmgmt_config` — TMGMT config entity source
+- `language` — Language management
+- `content_translation` — Content translation
+
+### 2. Add Languages
+
+```bash
+drush language-add fr
+drush language-add es
+```
+
+Or navigate to Admin > Configuration > Regional and language > Languages (`/admin/config/regional/language`) and add languages.
+
+### 3. Configure Canvas Page for Translation
+
+Navigate to Admin > Configuration > Regional and language > Content language (`/admin/config/regional/content-language`) and enable translation for the "Canvas Page" entity type.
+
+### 4. Create a TMGMT Translator
+
+Navigate to Admin > Translation > Translators (`/admin/tmgmt/translators`) and create a translator:
+- **Label:** "Local translator" (or any name)
+- **Plugin:** Drupal user
+
+This allows site users to provide translations directly via the TMGMT review form.
+
+### 5. Clear Caches
+
+```bash
+drush cr
+```
+
+### 6. Verify
+
+1. Create and publish a Canvas page
+2. Visit `/admin/canvas/translations/canvas_page` — should see the page listed with language status
+3. Click "Translate" for any language — should open the TMGMT review form
+4. Open the page in Canvas editor — language selector should show with "Edit translation" in dots menu for non-default languages
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/Controller/TranslationJobController.php` | Auto-creates TMGMT jobs/items, handles smart routing |
+| `src/Controller/TranslationDashboardController.php` | Translation dashboard with per-entity sub-tables |
+| `src/Controller/ApiLanguageController.php` | API endpoint for entity translation status |
+| `src/EventSubscriber/CanvasRouteOptionsEventSubscriber.php` | Redirects language-prefixed Canvas URLs |
+| `src/Controller/ApiAutoSaveController.php` | Translation preservation on publish |
+| `ui/src/components/languageSelector/LanguageSelector.tsx` | Language selector with translation actions |
+| `ui/src/services/languages.ts` | RTK Query hooks for languages and translations |
+| `canvas.routing.yml` | Route definitions for dashboard and translation actions |
+| `canvas.links.menu.yml` | Menu link for dashboard under Admin > Content |
+| `canvas.links.task.yml` | Local task tabs for entity type switching |
