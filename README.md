@@ -60,12 +60,13 @@ Demonstrates how the TMGMT (Translation Management Tool) module integrates with 
 ### 1. Enable Required Modules
 
 ```bash
-drush en canvas canvas_sdc_test tmgmt_content tmgmt_local tmgmt_config language content_translation -y
+drush en canvas canvas_sdc_test canvas_dev_translation tmgmt_content tmgmt_local tmgmt_config language content_translation -y
 ```
 
 Required modules:
 - `canvas` — Canvas / Experience Builder
 - `canvas_sdc_test` — Test components for Canvas
+- `canvas_dev_translation` — Enables translation features for Canvas entities
 - `tmgmt_content` — TMGMT content entity source
 - `tmgmt_local` — TMGMT local translator (allows Drupal users to translate)
 - `tmgmt_config` — TMGMT config entity source
