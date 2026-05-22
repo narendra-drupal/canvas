@@ -129,7 +129,7 @@ const LanguageSelector = () => {
   const handleTranslate = (languageId: string) => {
     if (entityType && entityId) {
       window.open(
-        `/admin/canvas/translate/${entityType}/${entityId}/${languageId}`,
+        `/admin/canvas/translate/${entityType}/${entityId}/${languageId}?origin=canvas`,
         '_blank',
       );
     }
