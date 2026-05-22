@@ -130,6 +130,29 @@ canvas canvas_sdc_test canvas_dev_translation tmgmt_content tmgmt_local tmgmt_co
 
 `canvas_dev_translation` enables translation features for Canvas entities.
 
+## Bugs Needing Real Issues (🔥🔥🐛🐛)
+
+These are bugs discovered during demo work that exist independent of this demo workflow and need proper Drupal.org issues:
+
+1. **Core: content_translation_outdated never set outside form layer** (`canvas.module` presave hook)
+   - Any entity saved via REST, JSON:API, or custom controllers never flags translations outdated
+   - Our workaround: `canvas_entity_presave()` sets the flag manually for `canvas_page`
+
+2. **Canvas: Publishing drops translations** (`src/Controller/ApiAutoSaveController.php:367`)
+   - When creating a new revision from auto-save data, existing translations from the previous revision are not carried forward
+   - Publishing a page drops all non-default-language translations
+   - Issue: https://drupal.org/i/3583684
+
+3. **Canvas: Editor breaks with language prefix URLs** (`src/EventSubscriber/CanvasRouteOptionsEventSubscriber.php:30`)
+   - Canvas editor does not support rendering in non-default languages
+   - Workaround: redirect `/es/canvas/...` to unprefixed path
+
+4. **Canvas: "Edit translation" showed for unpublished entities** (`LanguageSelector.tsx:228`)
+   - Fixed in demo by gating on `isPublished` — but the underlying `isPublished` was reading from wrong source (config slice always returned false)
+
+5. **Canvas: Delete button showed for languages without translations** (`LanguageSelector.tsx:238`)
+   - From a merged patch; fixed in demo by gating on `availableTranslations.includes(language.id)`
+
 ## Known Limitations
 
 - **Outdated flag is overly broad** — `content_translation_outdated` fires on ANY new revision, even non-translatable changes (layout-only edits)
