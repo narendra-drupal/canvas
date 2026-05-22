@@ -108,6 +108,40 @@ function canvas_preprocess_html(array &$variables): void {
 }
 
 /**
+ * Implements hook_entity_presave().
+ *
+ * Marks non-source translations as outdated when the default translation is
+ * saved. Canvas bypasses the content_translation form which normally handles
+ * this, so we do it here.
+ *
+ * @todo 🔥🔥🐛🐛 This is likely a core bug: content_translation only marks
+ *   translations outdated via ContentTranslationHandler::retranslate() which
+ *   is called from the content translation form. Any entity saved outside that
+ *   form (REST, JSON:API, custom controllers, Canvas auto-save) never gets
+ *   translations flagged as outdated. Core should handle this in a presave
+ *   hook or entity lifecycle event, not only in the form layer.
+ */
+function canvas_entity_presave(\Drupal\Core\Entity\EntityInterface $entity): void {
+  if (!$entity instanceof \Drupal\Core\Entity\TranslatableInterface) {
+    return;
+  }
+  if ($entity->getEntityTypeId() !== 'canvas_page') {
+    return;
+  }
+  if (!$entity->isNewRevision()) {
+    return;
+  }
+  $default_langcode = $entity->language()->getId();
+  foreach ($entity->getTranslationLanguages(FALSE) as $langcode => $language) {
+    if ($langcode === $default_langcode) {
+      continue;
+    }
+    $translation = $entity->getTranslation($langcode);
+    $translation->set('content_translation_outdated', TRUE);
+  }
+}
+
+/**
  * Implements hook_entity_prepare_form().
  *
  * Pre-populates TMGMT job item form with existing translation data so users
