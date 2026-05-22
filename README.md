@@ -52,6 +52,8 @@ Demonstrates how the TMGMT (Translation Management Tool) module integrates with 
 - **Delete translation** button in language selector opens the standard Drupal translation deletion form (not a Canvas-native UX).
 - **No continuous job support for config entities** — Only `ContentEntitySource` implements `ContinuousSourceInterface`.
 - **One TMGMT translator must exist** — The system throws an error if no translator is configured.
+- **Content Templates have no language selector** — The Canvas editor for content templates does not include the language selector. Translations for content templates must be initiated from the translation dashboard.
+- **Page Regions have no editor page** — Regions are not editable via the Canvas UI. Translations for page regions must be initiated from the translation dashboard.
 
 ## Setup Instructions
 
