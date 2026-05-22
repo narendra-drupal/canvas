@@ -11,7 +11,10 @@ import {
 import { Button, Flex, Popover, Separator, Text } from '@radix-ui/themes';
 
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { setConfiguration } from '@/features/configuration/configurationSlice';
+import {
+  selectIsPublished,
+  setConfiguration,
+} from '@/features/configuration/configurationSlice';
 import {
   initialState as layoutInitialState,
   setInitialLayoutModel,
@@ -37,6 +40,7 @@ const LanguageSelector = () => {
   const dispatch = useAppDispatch();
   const dotsRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const pageData = useAppSelector(selectPageData);
+  const isPublished = useAppSelector(selectIsPublished);
   const { data: availableTranslations = [] } = useGetEntityTranslationsQuery(
     { entityType: entityType!, entityId: entityId! },
     { skip: !entityType || !entityId },
@@ -217,13 +221,16 @@ const LanguageSelector = () => {
                       {pageData?.title || 'Untitled'} ({language.name})
                     </Text>
                     <Separator size="4" my="1" />
-                    <button
-                      className="language-selector-popover-item"
-                      onClick={() => handleTranslate(language.id)}
-                    >
-                      <ExternalLinkIcon width="14" height="14" />
-                      <Text size="2">Edit translation</Text>
-                    </button>
+                    {/* @todo 🔥🔥🐛🐛 "Edit translation" was showing for unpublished entities and default language */}
+                    {isPublished && !language.isDefault && (
+                      <button
+                        className="language-selector-popover-item"
+                        onClick={() => handleTranslate(language.id)}
+                      >
+                        <ExternalLinkIcon width="14" height="14" />
+                        <Text size="2">Edit translation</Text>
+                      </button>
+                    )}
                     {/* @todo 🔥🔥🐛🐛 Delete button was showing for languages without translations (from merged patch) */}
                     {availableTranslations.includes(language.id) && !language.isDefault && (
                       <button
