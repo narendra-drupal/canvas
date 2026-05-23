@@ -47,8 +47,13 @@ final class TranslationDashboardFilterForm extends FormBase {
 
     $form['filters'] = [
       '#type' => 'container',
-      '#attributes' => ['class' => ['views-exposed-form']],
+      '#attributes' => [
+        'class' => ['views-exposed-form'],
+        'style' => 'display:flex;flex-wrap:wrap;align-items:flex-end;gap:1rem;',
+      ],
     ];
+
+    $auto_submit = ['onchange' => 'this.form.submit()'];
 
     $entity_type_options = $this->getTranslatableEntityTypes();
     $form['filters']['entity_type'] = [
@@ -57,6 +62,7 @@ final class TranslationDashboardFilterForm extends FormBase {
       '#options' => $entity_type_options,
       '#default_value' => \array_key_exists($entity_type, $entity_type_options) ? $entity_type : array_key_first($entity_type_options),
       '#required' => TRUE,
+      '#attributes' => $auto_submit,
     ];
 
     $bundle_options = $this->getTranslatableBundles($entity_type);
@@ -67,6 +73,7 @@ final class TranslationDashboardFilterForm extends FormBase {
         '#options' => $bundle_options,
         '#default_value' => $bundle,
         '#empty_option' => $this->t('- All -'),
+        '#attributes' => $auto_submit,
       ];
     }
 
@@ -78,6 +85,7 @@ final class TranslationDashboardFilterForm extends FormBase {
       '#options' => $language_options,
       '#default_value' => $default_langcode,
       '#required' => TRUE,
+      '#attributes' => $auto_submit,
     ];
 
     $form['filters']['title'] = [
@@ -97,11 +105,12 @@ final class TranslationDashboardFilterForm extends FormBase {
         'outdated' => $this->t('Outdated'),
       ],
       '#default_value' => $status,
+      '#attributes' => $auto_submit,
     ];
 
     $form['filters']['submit'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Apply'),
+      '#value' => $this->t('Search'),
     ];
 
     return $form;

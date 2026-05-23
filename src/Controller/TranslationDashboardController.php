@@ -59,16 +59,6 @@ final class TranslationDashboardController extends ControllerBase {
     $is_config_entity = $entity_type_definition instanceof ConfigEntityTypeInterface;
     $storage = $this->entityTypeManager()->getStorage($entity_type);
 
-    // Build destination URL to return to dashboard with current filters.
-    $destination_query = array_filter([
-      'entity_type' => $entity_type,
-      'bundle' => $bundle,
-      'langcode' => $langcode,
-      'title' => $title_filter,
-      'status' => $status_filter,
-    ]);
-    $destination = Url::fromRoute('canvas.translation_dashboard', [], ['query' => $destination_query])->toString();
-
     if ($is_config_entity) {
       $entities = $storage->loadMultiple();
       // Apply title filter manually for config entities.
@@ -116,7 +106,7 @@ final class TranslationDashboardController extends ControllerBase {
         'entity_type' => $entity_type,
         'entity_id' => $entity_id,
         'target_language' => $langcode,
-      ], ['query' => ['destination' => $destination]]);
+      ]);
 
       $status_label = match ($status) {
         'outdated' => $this->t('Outdated'),
