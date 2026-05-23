@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\canvas\Form;
 
 use Drupal\content_translation\ContentTranslationManagerInterface;
+use Drupal\Core\Config\Entity\ConfigEntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -136,50 +137,50 @@ final class TranslationDashboardFilterForm extends FormBase {
   }
 
   /**
-   * Returns translatable entity type options, ordered as defined.
+   * Returns translatable entity type options, sorted alphabetically.
    */
   public function getTranslatableEntityTypes(): array {
-    $candidates = [
-      'node' => $this->t('Node'),
-      'taxonomy_term' => $this->t('Taxonomy Term'),
-      'media' => $this->t('Media'),
-      'canvas_page' => $this->t('Canvas Page'),
-      'content_template' => $this->t('Canvas Content Template'),
-      'page_region' => $this->t('Canvas Global Regions'),
-    ];
-
-    $config_entity_types = ['content_template', 'page_region'];
     $options = [];
 
-    foreach ($candidates as $entity_type_id => $label) {
-      $definition = $this->entityTypeManager->getDefinition($entity_type_id, FALSE);
-      if (!$definition) {
+    foreach ($this->entityTypeManager->getDefinitions() as $entity_type_id => $definition) {
+      if ($definition instanceof ConfigEntityTypeInterface) {
         continue;
       }
-
-      if (\in_array($entity_type_id, $config_entity_types, TRUE)) {
-        $options[$entity_type_id] = $label;
-        continue;
-      }
-
       $bundle_entity_type = $definition->getBundleEntityType();
       if ($bundle_entity_type) {
         $bundle_ids = \array_keys($this->entityTypeManager->getStorage($bundle_entity_type)->loadMultiple());
         foreach ($bundle_ids as $bundle_id) {
           if ($this->contentTranslationManager->isEnabled($entity_type_id, $bundle_id)) {
-            $options[$entity_type_id] = $label;
+            $options[$entity_type_id] = $definition->getLabel();
             break;
           }
         }
       }
       else {
-        // No bundle entity type — uses entity type ID as bundle.
         if ($this->contentTranslationManager->isEnabled($entity_type_id, $entity_type_id)) {
-          $options[$entity_type_id] = $label;
+          $options[$entity_type_id] = $definition->getLabel();
         }
       }
     }
 
+    // @todo Use TMGMT as source of truth for available entity types instead of
+    //   this hardcoded list. TMGMT's config source plugin (tmgmt_config) uses
+    //   plugin.manager.config_translation.mapper to enumerate config entity
+    //   types, and ContentEntitySource uses content_translation.manager for
+    //   content entity types. Aligning with TMGMT would ensure the dashboard
+    //   only shows entity types that TMGMT can actually translate.
+    // Canvas config entity types are included when config_translation support
+    // is active (i.e., canvas_dev_translation module is installed), indicated
+    // by the presence of the config-translation-overview link template.
+    $canvas_config_entity_types = ['content_template', 'page_region'];
+    foreach ($canvas_config_entity_types as $entity_type_id) {
+      $definition = $this->entityTypeManager->getDefinition($entity_type_id, FALSE);
+      if ($definition && $definition->hasLinkTemplate('config-translation-overview')) {
+        $options[$entity_type_id] = $definition->getLabel();
+      }
+    }
+
+    asort($options);
     return $options;
   }
 
@@ -190,13 +191,8 @@ final class TranslationDashboardFilterForm extends FormBase {
    * bundle, or entity type without a bundle entity type).
    */
   public function getTranslatableBundles(string $entity_type_id): array {
-    $config_entity_types = ['content_template', 'page_region'];
-    if (\in_array($entity_type_id, $config_entity_types, TRUE)) {
-      return [];
-    }
-
     $definition = $this->entityTypeManager->getDefinition($entity_type_id, FALSE);
-    if (!$definition) {
+    if (!$definition || $definition instanceof ConfigEntityTypeInterface) {
       return [];
     }
 
