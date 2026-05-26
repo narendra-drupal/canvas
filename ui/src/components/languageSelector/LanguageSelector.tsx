@@ -126,16 +126,6 @@ const LanguageSelector = () => {
     }
   };
 
-  const handleTranslate = (languageId: string) => {
-    if (entityType && entityId) {
-      window.open(
-        `/admin/canvas/translate/${entityType}/${entityId}/${languageId}?origin=canvas`,
-        '_blank',
-      );
-    }
-    setOpenPopoverId(null);
-  };
-
   const handleDeleteTranslation = (languageId: string) => {
     if (entityType && entityId) {
       window.open(
@@ -225,16 +215,6 @@ const LanguageSelector = () => {
                       {pageData?.title || 'Untitled'} ({language.name})
                     </Text>
                     <Separator size="4" my="1" />
-                    {/* @todo 🔥🔥🐛🐛 "Edit translation" was showing for unpublished entities and default language */}
-                    {isPublished && !language.isDefault && (
-                      <button
-                        className="language-selector-popover-item"
-                        onClick={() => handleTranslate(language.id)}
-                      >
-                        <ExternalLinkIcon width="14" height="14" />
-                        <Text size="2">Edit translation</Text>
-                      </button>
-                    )}
                     {/* @todo 🔥🔥🐛🐛 Delete button was showing for languages without translations (from merged patch) */}
                     {availableTranslations.includes(language.id) && !language.isDefault && (
                       <button
