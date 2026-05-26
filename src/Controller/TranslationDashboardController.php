@@ -115,10 +115,28 @@ final class TranslationDashboardController extends ControllerBase {
       };
       $action_label = $status === 'none' ? $this->t('Translate') : $this->t('Edit');
 
+      $view_link = '';
+      if (!$is_config_entity && $entity->hasLinkTemplate('canonical')) {
+        $view_links = [
+          'default' => Link::fromTextAndUrl($this->t('View default language'), $entity->getUntranslated()->toUrl('canonical'))->toRenderable(),
+        ];
+        if ($entity instanceof TranslatableInterface && $entity->hasTranslation($langcode)) {
+          $language = $this->languageManager()->getLanguage($langcode);
+          if ($language) {
+            $translation_url = $entity->toUrl('canonical')->setOption('language', $language);
+            $translation_link = Link::fromTextAndUrl($this->t('View translation'), $translation_url)->toRenderable();
+            $translation_link['#prefix'] = ' | ';
+            $view_links['translation'] = $translation_link;
+          }
+        }
+        $view_link = ['data' => $view_links];
+      }
+
       $rows[] = [
         $entity->label() ?: $entity_id,
         $status_label,
         ['data' => Link::fromTextAndUrl($action_label, $translate_url)->toRenderable()],
+        $view_link,
       ];
     }
 
@@ -130,7 +148,7 @@ final class TranslationDashboardController extends ControllerBase {
     else {
       $build['table'] = [
         '#type' => 'table',
-        '#header' => [$this->t('Title'), $this->t('Status'), $this->t('Action')],
+        '#header' => [$this->t('Title'), $this->t('Status'), $this->t('Action'), $this->t('View')],
         '#rows' => $rows,
       ];
     }
