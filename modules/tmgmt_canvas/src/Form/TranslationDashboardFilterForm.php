@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Drupal\canvas\Form;
+namespace Drupal\tmgmt_canvas\Form;
 
 use Drupal\content_translation\ContentTranslationManagerInterface;
 use Drupal\Core\Config\Entity\ConfigEntityTypeInterface;

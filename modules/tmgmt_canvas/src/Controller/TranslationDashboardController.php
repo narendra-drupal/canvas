@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Drupal\canvas\Controller;
+namespace Drupal\tmgmt_canvas\Controller;
 
-use Drupal\canvas\Form\TranslationDashboardFilterForm;
+use Drupal\tmgmt_canvas\Form\TranslationDashboardFilterForm;
 use Drupal\Core\Config\Entity\ConfigEntityTypeInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\TranslatableInterface;
@@ -31,7 +31,7 @@ final class TranslationDashboardController extends ControllerBase {
 
     // If no langcode in URL, use the same default the form uses.
     if (!$langcode) {
-      /** @var \Drupal\canvas\Form\TranslationDashboardFilterForm $form_obj */
+      /** @var \Drupal\tmgmt_canvas\Form\TranslationDashboardFilterForm $form_obj */
       $form_obj = \Drupal::classResolver(TranslationDashboardFilterForm::class);
       $language_options = $form_obj->getLanguageOptions();
       $langcode = array_key_first($language_options) ?? '';

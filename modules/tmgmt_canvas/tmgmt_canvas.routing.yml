@@ -1,0 +1,22 @@
+canvas.translation_dashboard:
+  path: '/admin/canvas/translations'
+  defaults:
+    _controller: '\Drupal\tmgmt_canvas\Controller\TranslationDashboardController::overview'
+    _title: 'Canvas Translations'
+  requirements:
+    _permission: 'translate any entity'
+
+canvas.translate_entity:
+  path: '/admin/canvas/translate/{entity_type}/{entity_id}/{target_language}'
+  defaults:
+    _controller: '\Drupal\tmgmt_canvas\Controller\TranslationJobController::translate'
+    _title: 'Translation'
+  requirements:
+    _permission: 'translate any entity'
+
+canvas.update_translation:
+  path: '/admin/canvas/translate/{entity_type}/{entity_id}/{target_language}/update'
+  defaults:
+    _controller: '\Drupal\tmgmt_canvas\Controller\TranslationJobController::updateTranslation'
+  requirements:
+    _permission: 'translate any entity'
