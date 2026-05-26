@@ -445,14 +445,6 @@ canvas.api.entity_translations.get:
   options:
     _format: 'json'
 
-canvas.translation_dashboard:
-  path: '/admin/canvas/translations'
-  defaults:
-    _controller: '\Drupal\canvas\Controller\TranslationDashboardController::overview'
-    _title: 'Canvas Translations'
-  requirements:
-    _permission: 'translate any entity'
-
 canvas.translate_entity:
   path: '/admin/canvas/translate/{entity_type}/{entity_id}/{target_language}'
   defaults:
