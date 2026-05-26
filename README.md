@@ -6,7 +6,7 @@ Demonstrates how the TMGMT (Translation Management Tool) module integrates with 
 
 ## Features
 
-- **Translation Dashboard** (`/admin/canvas/translations/canvas_page`) — Lists all published Canvas entities with per-language translation status. Tabbed interface for Pages, Content Templates, and Page Regions.
+- **Translation Dashboard** (`/admin/canvas/translations`) — Single filterable page showing per-language translation status. Filter dropdowns for Entity Type (Node, Taxonomy Term, Media, Canvas Page, Content Template, Page Regions), optional Bundle, Language, Title search, and Status. Shows only entity types with at least one translation-enabled bundle.
 - **One-click translation** — Users click "Translate" or "Edit" and are taken directly to the TMGMT review form. Jobs and job items are created automatically behind the scenes.
 - **Language selector integration** — The Canvas editor's language selector includes "Edit translation" in the per-language dots menu, opening the translation form in a new tab.
 - **Smart routing** — The controller detects the current translation state and routes appropriately:
@@ -31,11 +31,12 @@ Demonstrates how the TMGMT (Translation Management Tool) module integrates with 
 
 ### Translating from the Dashboard
 
-1. Navigate to Admin > Content > Canvas Translations
-2. Select the appropriate tab (Pages, Content Templates, Page Regions)
-3. Click "Translate" or "Edit" next to a language
-4. Fill in translations in the TMGMT review form and save
-5. Redirected back to the dashboard
+1. Navigate to Admin > Content > Canvas Translations (`/admin/canvas/translations`)
+2. Select Entity Type and Language using the filter dropdowns
+3. Optionally filter by Bundle, Title, or Status
+4. Click "Translate" or "Edit" next to an entity
+5. Fill in translations in the TMGMT review form and save
+6. Redirected back to the dashboard (preserving entity type and language filters)
 
 ### Updating an Existing Translation
 
@@ -103,7 +104,7 @@ drush cr
 ### 6. Verify
 
 1. Create and publish a Canvas page
-2. Visit `/admin/canvas/translations/canvas_page` — should see the page listed with language status
+2. Visit `/admin/canvas/translations` — should see the page listed with language status after selecting Entity Type and Language
 3. Click "Translate" for any language — should open the TMGMT review form
 4. Open the page in Canvas editor — language selector should show with "Edit translation" in dots menu for non-default languages
 
@@ -112,7 +113,8 @@ drush cr
 | File | Purpose |
 |------|---------|
 | `src/Controller/TranslationJobController.php` | Auto-creates TMGMT jobs/items, handles smart routing |
-| `src/Controller/TranslationDashboardController.php` | Translation dashboard with per-entity sub-tables |
+| `src/Controller/TranslationDashboardController.php` | Single filterable translation dashboard |
+| `src/Form/TranslationDashboardFilterForm.php` | Filter form embedded in dashboard (entity type, bundle, language, title, status) |
 | `src/Controller/ApiLanguageController.php` | API endpoint for entity translation status |
 | `src/EventSubscriber/CanvasRouteOptionsEventSubscriber.php` | Redirects language-prefixed Canvas URLs |
 | `src/Controller/ApiAutoSaveController.php` | Translation preservation on publish |
@@ -120,4 +122,3 @@ drush cr
 | `ui/src/services/languages.ts` | RTK Query hooks for languages and translations |
 | `canvas.routing.yml` | Route definitions for dashboard and translation actions |
 | `canvas.links.menu.yml` | Menu link for dashboard under Admin > Content |
-| `canvas.links.task.yml` | Local task tabs for entity type switching |
