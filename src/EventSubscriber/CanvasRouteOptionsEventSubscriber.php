@@ -33,6 +33,10 @@ final class CanvasRouteOptionsEventSubscriber implements EventSubscriberInterfac
   public function redirectCanvasToDefaultLanguage(RequestEvent $event): void {
     $request = $event->getRequest();
     $path = $request->getPathInfo();
+    if (str_contains($path, '/canvas/api')) {
+      // API routes support different languages to allow preview.
+      return;
+    }
     if (!str_starts_with($path, '/canvas') && !str_contains($path, '/canvas')) {
       return;
     }
